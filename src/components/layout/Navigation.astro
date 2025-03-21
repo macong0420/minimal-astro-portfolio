@@ -5,21 +5,24 @@ const currentPath = pathname.replace(/\/$/, "");
 ---
 
 <nav aria-label="Main navigation">
-  <ul class="nav-links">
-    {
-      NAVIGATION.map(({ path, name }) => {
-        const isActive = currentPath === path || 
-                          (path !== "/" && currentPath.startsWith(path));
-        return (
-          <li>
-            <a href={path} class:list={[{ active: isActive }]}>
-              {name}
-            </a>
-          </li>
-        );
-      })
-    }
-  </ul>
+  <div class="nav-container">
+    <ul class="nav-links">
+      {
+        NAVIGATION.map(({ path, name }) => {
+          const isActive = currentPath === path || 
+                            (path !== "/" && currentPath.startsWith(path));
+          return (
+            <li>
+              <a href={path} class:list={[{ active: isActive }]}>
+                {name}
+              </a>
+            </li>
+          );
+        })
+      }
+    </ul>
+    <slot />
+  </div>
 </nav>
 
 <style>
@@ -27,11 +30,18 @@ const currentPath = pathname.replace(/\/$/, "");
     padding: 1.5rem 0;
   }
 
+  .nav-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
   .nav-links {
     display: flex;
     gap: 1.5rem;
     list-style: none;
     padding: 0;
+    margin: 0;
   }
 
   a {
@@ -55,7 +65,6 @@ const currentPath = pathname.replace(/\/$/, "");
     font-weight: 600;
   }
 
-  /* 添加美观的下划线效果 */
   a.active::after {
     content: "";
     position: absolute;
@@ -84,4 +93,4 @@ const currentPath = pathname.replace(/\/$/, "");
       padding: 0.4rem 0.6rem;
     }
   }
-</style> 
+</style>

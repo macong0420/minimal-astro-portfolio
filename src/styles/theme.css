@@ -61,9 +61,25 @@
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
-/* 移除或替换深色主题相关的设置 */
 [data-theme="dark"] {
-  /* 这里可以留空，或完全删除这个选择器 */
+  --primary-color: #26a69a;
+  --primary-gradient: linear-gradient(83.21deg, #26a69a 0%, #4db6ac 100%);
+  
+  --bg-color: #111111;
+  --surface-color: #1a1a1a;
+  --hover-bg: #222222;
+  
+  --text-color: #ffffff;
+  --text-muted: #9ca3af;
+  --text-subtle: #6b7280;
+  
+  --border-color: #2e2e2e;
+  
+  --link-color: #4db6ac;
+  --link-hover: #80cbc4;
+
+  --code-bg: #1a1a1a;
+  --code-color: #e0e0e0;
 }
 
 html {

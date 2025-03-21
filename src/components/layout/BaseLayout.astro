@@ -57,18 +57,19 @@ const { title, description, image = "/default-og-image.jpg", canonicalURL = Astr
     <meta name="generator" content={Astro.generator} />
     <ClientRouter />
     <script is:inline>
-      // 始终使用白色主题
-      document.documentElement.setAttribute("data-theme", "light");
+      // 从localStorage获取主题
+      const theme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute("data-theme", theme);
 
       // 处理视图转换期间的主题持久性
       document.addEventListener("astro:before-swap", (ev) => {
-        ev.newDocument.documentElement.setAttribute("data-theme", "light");
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        ev.newDocument.documentElement.setAttribute("data-theme", currentTheme);
       });
 
       // 添加初始加载类
       document.addEventListener("DOMContentLoaded", () => {
         document.body.classList.add("initial-load");
-
         setTimeout(() => {
           document.body.classList.remove("initial-load");
           document.documentElement.classList.add("theme-transition");

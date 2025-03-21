@@ -1,5 +1,6 @@
 ---
 import { NAVIGATION } from "../../constants/navigation";
+import ThemeToggle from "./ThemeToggle.astro";
 const pathname = new URL(Astro.request.url).pathname;
 
 const isActive = (path: string) => {
@@ -9,59 +10,86 @@ const isActive = (path: string) => {
 ---
 
 <nav>
-  <div class="nav-links">
-    {
-      NAVIGATION.map(({ name, path }) => (
-        <a href={path} class={isActive(path) ? "active" : ""}>
-          {name}
-        </a>
-      ))
-    }
+  <div class="nav-container">
+    <div class="nav-links">
+      {
+        NAVIGATION.map(({ name, path }) => (
+          <a href={path} class={isActive(path) ? "active" : ""}>
+            {name}
+          </a>
+        ))
+      }
+    </div>
+    <ThemeToggle />
   </div>
 </nav>
 
 <style>
   nav {
+    padding: 1.5rem 0;
+  }
+
+  .nav-container {
     display: flex;
+    width: 100%;
+    justify-content: flex-start;
     align-items: center;
+    gap: 2rem;
   }
 
   .nav-links {
     display: flex;
     gap: 1.5rem;
+    flex: 1;
   }
 
   .nav-links a {
     color: var(--text-muted);
     text-decoration: none;
-    font-size: var(--text-sm);
-    transition: color var(--transition-base);
-    position: relative;
-  }
-
-  a {
-    color: var(--text-muted);
-    text-decoration: none;
-    font-size: var(--text-sm);
-    transition: color var(--transition-base);
+    font-size: var(--text-base);
+    font-weight: 500;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-base);
     position: relative;
   }
 
   a:hover {
     color: var(--text-color);
+    background-color: var(--hover-bg);
   }
 
   a.active {
-    color: var(--text-color) !important;
+    color: var(--primary-color);
+    font-weight: 600;
   }
 
   a.active::after {
     content: "";
     position: absolute;
-    bottom: -2px;
-    left: 0;
-    width: 100%;
-    height: 1px;
-    background: var(--primary-color);
+    bottom: 0;
+    left: 0.75rem;
+    right: 0.75rem;
+    height: 2px;
+    background: var(--primary-gradient);
+    border-radius: 2px;
+    transform-origin: center;
+    transform: scaleX(0.8);
+    transition: transform 0.2s ease;
+  }
+
+  a.active:hover::after {
+    transform: scaleX(1);
+  }
+
+  @media (max-width: 640px) {
+    .nav-links {
+      gap: 1rem;
+    }
+    
+    a {
+      font-size: var(--text-sm);
+      padding: 0.4rem 0.6rem;
+    }
   }
 </style>
