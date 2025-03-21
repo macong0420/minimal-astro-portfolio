@@ -21,8 +21,13 @@
   --link-hover: #004d40;
 
   /* 代码高亮背景 */
-  --code-bg: #f9f9f9;
-  --code-color: #24292e;
+  --code-bg: #1e1e1e;  /* VSCode-like dark background */
+  --code-text: #d4d4d4; /* Light gray text */
+  --code-keyword: #c586c0; /* Purple for keywords */
+  --code-function: #dcdcaa; /* Yellow for functions */
+  --code-string: #ce9178; /* Orange for strings */
+  --code-comment: #6a9955; /* Green for comments */
+  --code-variable: #9cdcfe; /* Light blue for variables */
   
   /* 字体 */
   --font-primary: 'Inter', system-ui, -apple-system, sans-serif;
@@ -101,4 +106,62 @@ body {
   100% {
     background-position: 0% 50%;
   }
+}
+
+/* 移除代码块白色背景 */
+pre {
+  background-color: var(--code-bg) !important;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  color: var(--code-text);
+  font-size: 0.95em;
+  line-height: 1.5;
+}
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.95em;
+  background-color: transparent !important;
+  padding: 0.2em 0.4em;
+  border-radius: var(--radius-sm);
+}
+
+pre code {
+  padding: 0;
+  background-color: transparent;
+  border-radius: 0;
+}
+
+/* 语法高亮 */
+.token.keyword {
+  color: var(--code-keyword);
+}
+
+.token.function {
+  color: var(--code-function);
+}
+
+.token.string {
+  color: var(--code-string);
+}
+
+.token.comment {
+  color: var(--code-comment);
+  font-style: italic;
+}
+
+.token.variable {
+  color: var(--code-variable);
+}
+
+/* 行内代码样式 */
+:not(pre) > code {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: var(--text-color);
+  padding: 0.2em 0.4em;
+  border-radius: var(--radius-sm);
+  font-size: 0.9em;
 }
