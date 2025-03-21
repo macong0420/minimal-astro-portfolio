@@ -230,4 +230,4 @@ logger.info('User profile updated', {
 
 Effective logging is an art that balances detail with clarity, performance with thoroughness. By following these practices, you'll create logs that are not just records of what happened, but valuable tools for understanding and improving your application.
 
-Remember: Good logs are like good documentation - they tell a story. Make sure your logs tell the story you need to hear when things go wrong. 
+Remember: Good logs are like good documentation - they tell a story. Make sure your logs tell the story you need to hear when things go wrong.

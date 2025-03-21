@@ -107,4 +107,4 @@ Whether you're onboarding new team members, developing cross-platform applicatio
 
 So go forth, dear developer. Embrace the box. Let your code run free, unshackled by the constraints of individual machines. And remember, in the wild west of software development, a well-crafted DevContainer can make all the difference between "It works on my machine" and "It works. Period."
 
-Happy coding, and may your development environments always feel like home, no matter where you are! 
+Happy coding, and may your development environments always feel like home, no matter where you are!
