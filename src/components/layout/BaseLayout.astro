@@ -14,6 +14,7 @@ import interMediumWoff2 from "@fontsource/inter/files/inter-latin-500-normal.wof
 import robotoMonoRegularWoff2 from "@fontsource/roboto-mono/files/roboto-mono-latin-400-normal.woff2?url";
 import { ClientRouter } from "astro:transitions";
 import Navigation from "../shared/Navigation.astro";
+import "prismjs/themes/prism-tomorrow.css";
 
 interface Props {
   title: string;
@@ -85,5 +86,6 @@ const { title, description, image = "/default-og-image.jpg", canonicalURL = Astr
       <main><slot /></main>
     </main>
     <div class="bottom-glow" transition:persist></div>
+    <script is:inline src="/prism.js"></script>
   </body>
 </html>
