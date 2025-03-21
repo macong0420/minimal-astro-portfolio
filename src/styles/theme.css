@@ -21,13 +21,16 @@
   --link-hover: #004d40;
 
   /* 代码高亮背景 */
-  --code-bg: #1e1e1e;  /* VSCode-like dark background */
-  --code-text: #d4d4d4; /* Light gray text */
-  --code-keyword: #c586c0; /* Purple for keywords */
-  --code-function: #dcdcaa; /* Yellow for functions */
-  --code-string: #ce9178; /* Orange for strings */
-  --code-comment: #6a9955; /* Green for comments */
-  --code-variable: #9cdcfe; /* Light blue for variables */
+  --code-bg: #1d1f21;  /* 更深的背景色 */
+  --code-text: #e0e0e0; /* 更亮的文本 */
+  --code-keyword: #c586c0; /* 紫色关键字 */
+  --code-function: #dcdcaa; /* 黄色函数 */
+  --code-string: #ce9178; /* 橙色字符串 */
+  --code-comment: #6a9955; /* 绿色注释 */
+  --code-variable: #9cdcfe; /* 浅蓝色变量 */
+  --code-property: #f92672; /* 品红色属性 */
+  --code-operator: #f8f8f2; /* 白色运算符 */
+  --code-punctuation: #88846f; /* 灰色标点 */
   
   /* 字体 */
   --font-primary: 'Inter', system-ui, -apple-system, sans-serif;
@@ -112,13 +115,14 @@ body {
 pre {
   background-color: var(--code-bg) !important;
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   padding: 1.25rem;
   margin: 1.5rem 0;
   overflow-x: auto;
   color: var(--code-text);
   font-size: 0.95em;
   line-height: 1.5;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
 code {
@@ -159,11 +163,12 @@ pre code {
 
 /* 行内代码样式 */
 :not(pre) > code {
-  background-color: rgba(255, 255, 255, 0.1) !important;
+  background-color: rgba(0, 0, 0, 0.05) !important;
   color: var(--text-color);
   padding: 0.2em 0.4em;
   border-radius: var(--radius-sm);
   font-size: 0.9em;
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 /* 更多语法高亮类型 */
@@ -174,7 +179,7 @@ pre code {
 .token.constant,
 .token.symbol,
 .token.deleted {
-  color: #f92672;
+  color: var(--code-property);
 }
 
 .token.selector,
@@ -190,7 +195,11 @@ pre code {
 .token.url,
 .language-css .token.string,
 .style .token.string {
-  color: #f8f8f2;
+  color: var(--code-operator);
+}
+
+.token.punctuation {
+  color: var(--code-punctuation);
 }
 
 .token.atrule,

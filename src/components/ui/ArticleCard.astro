@@ -40,11 +40,7 @@ const formatDate = (date: Date | undefined) => {
   article {
     padding: 1.5rem 0;
     border-bottom: 1px solid var(--border-color);
-    transition: background-color var(--transition-base);
-  }
-
-  article:hover {
-    background-color: var(--hover-bg);
+    transition: var(--transition-base);
   }
 
   article:last-child {
@@ -67,7 +63,7 @@ const formatDate = (date: Date | undefined) => {
   }
   
   .title-row a:hover {
-    color: var(--link-color);
+    color: var(--primary-color);
   }
   
   .muted-text {
