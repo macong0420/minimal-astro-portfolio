@@ -1,0 +1,124 @@
+---
+import BaseLayout from "../components/layout/BaseLayout.astro";
+import Container from "../components/ui/Container.astro";
+import Section from "../components/ui/Section.astro";
+import Card from "../components/ui/Card.astro";
+
+const projects = [
+  {
+    title: "图片水印工具",
+    description: "一个纯前端的图片水印工具，让用户可以在本地为图片添加自定义水印。所有操作都在浏览器中完成，无需上传图片，保护用户隐私。支持调整水印文字、大小、透明度、角度等多种参数。",
+    url: "https://shuiyin.yc0501.online/",
+    tags: ["JavaScript", "React", "Canvas", "隐私保护"]
+  },
+  {
+    title: "OpenAlternative",
+    description: "一个开源软件导航平台，帮助用户找到付费软件的开源替代品。收录了大量优质开源项目，并提供详细的对比信息，让用户可以轻松找到适合自己的免费开源解决方案。",
+    url: "https://openalternative.co/",
+    tags: ["开源", "软件导航", "资源分享"]
+  }
+];
+---
+
+<BaseLayout 
+  title="Projects | Mr.C" 
+  description="我的项目作品集"
+>
+  <Container>
+    <Section>
+      <div class="projects-header">
+        <h1>Projects</h1>
+        <p class="subtitle">我的一些开源项目和作品</p>
+      </div>
+
+      <div class="projects-grid">
+        {projects.map((project) => (
+          <Card href={project.url} class="project-card">
+            <div class="project-content">
+              <h3>{project.title}</h3>
+              <p>{project.description}</p>
+              <div class="tags">
+                {project.tags.map((tag) => (
+                  <span class="tag">{tag}</span>
+                ))}
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </Section>
+  </Container>
+</BaseLayout>
+
+<style>
+  .projects-header {
+    margin-bottom: 3rem;
+  }
+
+  h1 {
+    font-size: var(--text-3xl);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .subtitle {
+    color: var(--text-muted);
+    font-size: var(--text-lg);
+  }
+
+  .projects-grid {
+    display: grid;
+    gap: 2rem;
+  }
+
+  .project-card {
+    padding: 2rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    background: var(--surface-color);
+  }
+
+  .project-content h3 {
+    font-size: var(--text-xl);
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--text-color);
+  }
+
+  .project-content p {
+    color: var(--text-muted);
+    font-size: var(--text-base);
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .tag {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    background: var(--hover-bg);
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-full);
+  }
+
+  @media (min-width: 768px) {
+    .projects-grid {
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+  }
+
+  @media (max-width: 640px) {
+    .projects-header {
+      margin-bottom: 2rem;
+    }
+
+    .project-card {
+      padding: 1.5rem;
+    }
+  }
+</style> 

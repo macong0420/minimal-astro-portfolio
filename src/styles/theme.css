@@ -1,24 +1,71 @@
 :root {
-  --bg-color: #111111;
-  --bg-color-muted: #1a1a1a;
+  /* 主题颜色变量 - 白色主题 */
+  --primary-color: #00796b;
+  --primary-gradient: linear-gradient(83.21deg, #00796b 0%, #26a69a 100%);
+  
+  /* 背景颜色 */
+  --bg-color: #ffffff;
+  --surface-color: #f8f8f8;
+  --hover-bg: #f0f0f0;
+  
+  /* 文字颜色 */
+  --text-color: #000000;
+  --text-muted: #4b5563;
+  --text-subtle: #6b7280;
+  
+  /* 边框和分割线 */
+  --border-color: #e5e7eb;
+  
+  /* 链接颜色 */
+  --link-color: #00796b;
+  --link-hover: #004d40;
 
-  --text-color: #ffffff;
-  --text-muted: #c0c0c0;
-  --link-color: #60a5fa;
-  --border-color: rgba(255, 255, 255, 0.1);
-  --hover-bg: rgba(255, 255, 255, 0.05);
+  /* 代码高亮背景 */
+  --code-bg: #f9f9f9;
+  --code-color: #24292e;
+  
+  /* 字体 */
+  --font-primary: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Roboto Mono', monospace;
+  
+  /* 字体大小 */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  
+  /* 圆角 */
+  --radius-sm: 0.125rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.5rem;
+  --radius-full: 9999px;
+  
+  /* 过渡 */
+  --transition-base: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* 阴影 */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
 
-  --mesh-color-1: rgba(123, 104, 238, 0.2);
-  --mesh-color-2: rgba(72, 61, 139, 0.15);
+/* 移除或替换深色主题相关的设置 */
+[data-theme="dark"] {
+  /* 这里可以留空，或完全删除这个选择器 */
+}
 
-  --glow-color: rgba(139, 92, 246, 0.3);
-  --top-glow-color: rgba(255, 255, 255, 0.08);
+html {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
 
-  --font-sans: "Source Sans Pro", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
-    Cantarell, sans-serif;
-  --font-mono: "Roboto Mono", Consolas, "Courier New", monospace;
-
-  --transition-base: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
 }
 
 /* Theme Transitions */

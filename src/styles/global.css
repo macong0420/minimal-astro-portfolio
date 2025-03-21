@@ -36,32 +36,16 @@
   padding: 0;
 }
 
-html {
-  font-family: var(--font-primary);
-  font-size: 16px;
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-  letter-spacing: -0.02em;
-  scrollbar-gutter: stable;
-  overflow-x: hidden;
-}
-
+html,
 body {
-  position: relative;
-  background: var(--bg-color);
-  min-height: 100vh;
-  width: 100%;
-  margin: 0;
   font-family: var(--font-primary);
+  background-color: var(--bg-color);
   color: var(--text-color);
-  font-size: var(--text-base);
-  font-weight: 300;
-  letter-spacing: -0.03em;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .astro-code * {
@@ -164,11 +148,10 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: var(--font-primary);
-  font-weight: 300;
-  line-height: 1.2;
-  margin-bottom: 0.75rem;
-  letter-spacing: -0.04em;
+  color: var(--text-color);
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  line-height: 1.3;
 }
 
 h1 {
@@ -204,6 +187,7 @@ h6 {
 }
 
 p {
+  margin-top: 0;
   margin-bottom: 1rem;
   max-width: 70ch;
   line-height: 1.6;
@@ -214,22 +198,11 @@ a {
   color: var(--link-color);
   text-decoration: none;
   position: relative;
-  transition: opacity var(--link-animation-duration);
+  transition: color var(--transition-base);
 }
 
-a:not(.category-link)::after {
-  content: "";
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  width: 0;
-  height: 1px;
-  background: currentColor;
-  transition: width var(--link-animation-duration) ease;
-}
-
-a:not(.category-link):hover::after {
-  width: 100%;
+a:hover {
+  color: var(--link-hover);
 }
 
 /* Special links that should not have the default style */
@@ -251,32 +224,21 @@ li {
 }
 
 /* Code */
-code,
-pre {
+pre,
+code {
   font-family: var(--font-mono);
-  font-weight: 400;
-  font-size: var(--text-xs);
-  letter-spacing: 0;
+  background-color: var(--code-bg);
+  color: var(--code-color);
+  border-radius: var(--radius-md);
 }
 
 pre {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 0.5rem;
   padding: 1rem;
-  margin: 1.5rem 0;
   overflow-x: auto;
 }
 
 code {
-  background: rgba(255, 255, 255, 0.05);
-  padding: 0.2em 0.4em;
-  border-radius: 0.25rem;
-}
-
-pre code {
-  background: none;
-  padding: 0;
-  border-radius: 0;
+  padding: 0.2rem 0.4rem;
 }
 
 /* Images */
@@ -350,10 +312,10 @@ th {
 
 /* Blockquotes */
 blockquote {
-  border-left: 3px solid var(--border-color);
-  padding-left: 1.5rem;
-  margin: 1.5rem 0;
-  font-style: italic;
+  border-left: 4px solid var(--border-color);
+  margin-left: 0;
+  padding-left: 1rem;
+  color: var(--text-muted);
 }
 
 /* Horizontal Rule */
@@ -408,16 +370,66 @@ hr {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-h1,
-h2,
-h3 {
+time {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.container {
+  max-width: 65ch;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* 文章列表美化 */
+.content-list article {
+  position: relative;
+  transition: transform var(--transition-base);
+}
+
+.content-list article:hover {
+  transform: translateX(4px);
+}
+
+/* 美化的分隔线 */
+.content-list article:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
   background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.95),
-    rgba(255, 255, 255, 0.85) 50%,
-    rgba(255, 255, 255, 0.75) 100%
+    to right,
+    transparent,
+    var(--border-color) 20%,
+    var(--border-color) 80%,
+    transparent
   );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+}
+
+/* 文章卡片样式优化 */
+.content-list article {
+  padding: 1.5rem;
+  margin: 0 -1.5rem; /* 负边距使hover效果能延伸到容器边缘 */
+  border-radius: var(--radius-md);
+}
+
+/* 标题和日期布局优化 */
+.content-list .title-row {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+/* 响应式布局优化 */
+@media (max-width: 640px) {
+  .content-list article {
+    padding: 1.25rem 1rem;
+    margin: 0 -1rem;
+  }
+  
+  .content-list .title-row a {
+    font-size: var(--text-lg);
+  }
 }

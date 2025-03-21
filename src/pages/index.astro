@@ -1,17 +1,10 @@
 ---
 import Section from "../components/ui/Section.astro";
-import { getCollection, getEntry } from "astro:content";
+import { getCollection } from "astro:content";
 import type { CollectionEntry } from "astro:content";
 import BaseLayout from "../components/layout/BaseLayout.astro";
 import ContentList from "../components/shared/ContentList.astro";
 import Container from "../components/ui/Container.astro";
-
-const siteConfig = await getEntry("site", "home");
-if (!siteConfig) {
-  throw new Error("Site configuration not found");
-}
-
-const site = siteConfig.data;
 
 const formatDate = (date: Date | undefined) => {
   if (!date) return "";
@@ -31,39 +24,35 @@ const latestPosts = posts
   )
   .slice(0, 3);
 
-const experiences = await getCollection("experience");
-const sortedExperiences = experiences.sort(
-  (a: CollectionEntry<"experience">, b: CollectionEntry<"experience">) =>
-    b.data.startDate.getTime() - a.data.startDate.getTime()
-);
-
 const projects = await getCollection("projects");
 const featuredProjects = projects.filter((project: CollectionEntry<"projects">) => project.data.featured).slice(0, 3);
 ---
 
-<BaseLayout title={`${site.name} - Portfolio`} description={site.introduction}>
+<BaseLayout title="Mr.C - 客户端开发工程师" description="个人网站和博客">
   <Container>
     <section class="hero">
-      <h1>{site.name}</h1>
-      <p class="subtitle">{site.title}</p>
-      <p class="introduction">{site.introduction}</p>
-      {
-        site.socialLinks && (
-          <div class="social-links">
-            {site.socialLinks.map(({ platform, url }) => (
-              <a href={url} target="_blank" rel="noopener noreferrer">
-                {platform}
-              </a>
-            ))}
-          </div>
-        )
-      }
+      <h1>Mr.C</h1>
+      <p class="subtitle">客户端开发工程师 & 技术爱好者</p>
+      
+      <div class="intro">
+        <p>
+          你好！我是一名客户端开发工程师，负责架构设计和核心功能开发。主要从事 iOS、Flutter 和前端开发工作，热衷于探索新技术，追求代码质量和用户体验的完美统一。
+        </p>
+        <p>
+          我的技术栈包含 iOS、Flutter 和前端开发，能够独立完成移动端和 Web 端的项目开发。
+        </p>
+      </div>
+
+      <div class="social-links">
+        <a href="https://github.com/macong0420" target="_blank">GitHub</a>
+        <a href="https://x.com/Snipercccc" target="_blank">Twitter</a>
+      </div>
     </section>
 
     <Section>
       <div class="section-header">
-        <h2>{site.sections.blog.title}</h2>
-        <a href="/blog">{site.sections.blog.viewAllText}</a>
+        <h2>Blog</h2>
+        <a href="/blog">View all posts</a>
       </div>
       <ContentList>
         {
@@ -84,8 +73,8 @@ const featuredProjects = projects.filter((project: CollectionEntry<"projects">) 
 
     <section class="section">
       <div class="section-header">
-        <h2>{site.sections.projects.title}</h2>
-        <a href="/projects">{site.sections.projects.viewAllText}</a>
+        <h2>Projects</h2>
+        <a href="/projects">View all projects</a>
       </div>
       <ContentList>
         {
@@ -109,31 +98,6 @@ const featuredProjects = projects.filter((project: CollectionEntry<"projects">) 
         }
       </ContentList>
     </section>
-
-    <section class="section">
-      <div class="section-header">
-        <h2>{site.sections.experience.title}</h2>
-        <a href="/experience">{site.sections.experience.viewAllText}</a>
-      </div>
-      <div class="content-list">
-        {
-          sortedExperiences.slice(0, 2).map((exp) => (
-            <article>
-              <div class="title-row">
-                <div class="company-info">
-                  <img src={exp.data.logo} alt="" class="company-logo" />
-                  <span>{exp.data.title}</span>
-                </div>
-                <time>
-                  {formatDate(exp.data.startDate)} - {exp.data.current ? "Present" : formatDate(exp.data.endDate)}
-                </time>
-              </div>
-              <p class="muted-text">{exp.data.description}</p>
-            </article>
-          ))
-        }
-      </div>
-    </section>
   </Container>
 </BaseLayout>
 
@@ -147,11 +111,16 @@ const featuredProjects = projects.filter((project: CollectionEntry<"projects">) 
 
   .hero {
     padding: 4rem 0;
+    max-width: 65ch;
   }
 
-  .introduction {
-    margin: 1.5rem 0;
-    opacity: 0.9;
+  .intro {
+    margin: 1rem 0 2rem;
+    line-height: 1.6;
+  }
+  
+  .intro p {
+    margin-bottom: 1rem;
   }
 
   .section {
@@ -163,7 +132,6 @@ const featuredProjects = projects.filter((project: CollectionEntry<"projects">) 
     justify-content: space-between;
     align-items: baseline;
     margin-bottom: 2rem;
-    opacity: 0.7;
   }
 
   .title-row {
@@ -174,21 +142,9 @@ const featuredProjects = projects.filter((project: CollectionEntry<"projects">) 
     font-size: var(--text-sm);
   }
 
-  .company-info {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .company-logo {
-    width: 1.5rem;
-    height: 1.5rem;
-    object-fit: contain;
-  }
-
   time {
     font-size: var(--text-xs);
-    opacity: 0.5;
+    color: var(--text-muted);
     white-space: nowrap;
   }
 
@@ -200,14 +156,33 @@ const featuredProjects = projects.filter((project: CollectionEntry<"projects">) 
 
   .tags span {
     font-size: var(--text-xs);
-    opacity: 0.5;
+    color: var(--text-muted);
   }
 
   .social-links {
     display: flex;
-    gap: 1rem;
-    margin-top: 2rem;
-    opacity: 0.7;
+    gap: 1.5rem;
+  }
+
+  .social-links a {
+    color: var(--link-color);
+    text-decoration: none;
+    position: relative;
+  }
+
+  .social-links a::after {
+    content: "";
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background: currentColor;
+    transition: width var(--transition-base);
+  }
+
+  .social-links a:hover::after {
+    width: 100%;
   }
 
   @media (max-width: 640px) {

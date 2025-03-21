@@ -1,32 +1,40 @@
 ---
 import { getCollection } from "astro:content";
+import type { CollectionEntry } from "astro:content";
 import BaseLayout from "../../components/layout/BaseLayout.astro";
-import BaseHero from "../../components/shared/BaseHero.astro";
-import ArticleCard from "../../components/ui/ArticleCard.astro";
 import Container from "../../components/ui/Container.astro";
+import Section from "../../components/ui/Section.astro";
 import ContentList from "../../components/shared/ContentList.astro";
+import ArticleCard from "../../components/ui/ArticleCard.astro";
 
-const posts = await getCollection("blog", ({ data }) => {
+// 获取所有文章并按日期排序
+const posts = await getCollection("blog", ({ data }: CollectionEntry<"blog">) => {
   return import.meta.env.PROD ? !data.draft : true;
 });
 
-const sortedPosts = posts.sort((a, b) => b.data.publishedAt.getTime() - a.data.publishedAt.getTime());
+const sortedPosts = posts.sort(
+  (a: CollectionEntry<"blog">, b: CollectionEntry<"blog">) =>
+    b.data.publishedAt.getTime() - a.data.publishedAt.getTime()
+);
 ---
 
-<BaseLayout title="Blog" description="Read my latest blog posts">
+<BaseLayout title="Blog | Mr.C" description="我的技术博客和思考">
   <Container>
-    <BaseHero title="Blog" description="Read my latest blog posts" />
-    <ContentList>
-      {
-        sortedPosts.map((post) => (
-          <ArticleCard
-            title={post.data.title}
-            description={post.data.description}
-            url={`/blog/${post.id}`}
-            date={post.data.publishedAt}
-          />
-        ))
-      }
-    </ContentList>
+    <Section>
+      <!-- 删除这里的红框内容，直接展示文章列表 -->
+      <ContentList>
+        {
+          sortedPosts.map((post) => (
+            <ArticleCard
+              title={post.data.title}
+              description={post.data.description}
+              url={`/blog/${post.id}`}
+              date={post.data.publishedAt}
+              tags={post.data.tags}
+            />
+          ))
+        }
+      </ContentList>
+    </Section>
   </Container>
 </BaseLayout>

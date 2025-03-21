@@ -1,0 +1,192 @@
+---
+import BaseLayout from "../components/layout/BaseLayout.astro";
+import Container from "../components/ui/Container.astro";
+import Section from "../components/ui/Section.astro";
+---
+
+<BaseLayout title="About | Mr.C" description="关于我的个人介绍和技能">
+  <Container>
+    <Section>
+      <h1>关于我</h1>
+      <div class="about-content">
+        <h2>新晋奶爸~</h2>
+        <p class="intro">
+          👋 你好！我是一名客户端开发工程师，负责架构设计和核心功能开发。主要从事 iOS、Flutter 和前端开发工作，热衷于探索新技术，追求代码质量和用户体验的完美统一。
+        </p>
+
+        <div class="section">
+          <h3>技术栈</h3>
+          <p>我的技术栈包含 iOS、Flutter 和前端开发，能够独立完成移动端和 Web 端的项目开发。</p>
+          <div class="skills">
+            <div class="skill-tag">iOS</div>
+            <div class="skill-tag">Flutter</div>
+            <div class="skill-tag">React</div>
+            <div class="skill-tag">Next.js</div>
+            <div class="skill-tag">RAG</div>
+            <div class="skill-tag">Agent</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>兴趣爱好</h3>
+          <ul>
+            <li>
+              <strong>篮球</strong>
+              <p>热爱篮球运动，享受团队协作的乐趣</p>
+            </li>
+            <li>
+              <strong>中国象棋</strong>
+              <p>享受博弈的乐趣，提升思维能力</p>
+            </li>
+            <li>
+              <strong>阅读</strong>
+              <p>保持学习的习惯，探索不同领域的知识</p>
+            </li>
+            <li>
+              <strong>AI 产品</strong>
+              <p>关注并评测最新的 AI 产品和技术</p>
+            </li>
+          </ul>
+        </div>
+
+        <div class="section">
+          <h3>关于博客</h3>
+          <p>
+            这里是我的数字花园，记录日常学习和思考的内容。你可以找到关于编程技术、人工智能、产品设计的文章，
+            也可以看到我的阅读笔记和生活随想。希望这些内容能够帮助到你，也欢迎与我交流讨论。
+          </p>
+        </div>
+
+        <div class="section">
+          <h3>联系方式</h3>
+          <div class="contact-links">
+            <a href="https://github.com/macong0420" target="_blank" class="contact-link">
+              <span>GitHub</span>
+            </a>
+            <a href="https://x.com/Snipercccc" target="_blank" class="contact-link">
+              <span>Twitter</span>
+            </a>
+            <a href="mailto:macong0420@gmail.com" class="contact-link">
+              <span>邮件</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </Section>
+  </Container>
+</BaseLayout>
+
+<style>
+  h1 {
+    font-size: var(--text-3xl);
+    font-weight: 600;
+    margin-bottom: 2rem;
+  }
+
+  h2 {
+    font-size: var(--text-2xl);
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--primary-color);
+  }
+
+  h3 {
+    font-size: var(--text-xl);
+    font-weight: 600;
+    margin-bottom: 1rem;
+    margin-top: 2.5rem;
+  }
+
+  .about-content {
+    max-width: 72ch;
+  }
+
+  .intro {
+    font-size: var(--text-lg);
+    line-height: 1.6;
+    margin-bottom: 2rem;
+  }
+
+  .section {
+    margin-bottom: 2.5rem;
+  }
+
+  .section p {
+    line-height: 1.6;
+    margin-bottom: 1rem;
+  }
+
+  .skills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .skill-tag {
+    background-color: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    padding: 0.5rem 1rem;
+    font-size: var(--text-sm);
+  }
+
+  ul {
+    list-style-type: none;
+    padding: 0;
+  }
+
+  li {
+    margin-bottom: 1.5rem;
+  }
+
+  li strong {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+  }
+
+  li p {
+    margin: 0;
+    color: var(--text-muted);
+  }
+
+  .contact-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .contact-link {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    color: var(--link-color);
+    padding: 0.5rem 1rem;
+    background-color: var(--surface-color);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    transition: all var(--transition-base);
+  }
+
+  .contact-link:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  @media (max-width: 640px) {
+    .skills {
+      gap: 0.5rem;
+    }
+
+    .skill-tag {
+      padding: 0.4rem 0.8rem;
+    }
+
+    .contact-links {
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+  }
+</style> 

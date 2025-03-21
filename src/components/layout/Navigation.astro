@@ -1,0 +1,87 @@
+---
+import { NAVIGATION } from "../../constants/navigation";
+const pathname = new URL(Astro.request.url).pathname;
+const currentPath = pathname.replace(/\/$/, "");
+---
+
+<nav aria-label="Main navigation">
+  <ul class="nav-links">
+    {
+      NAVIGATION.map(({ path, name }) => {
+        const isActive = currentPath === path || 
+                          (path !== "/" && currentPath.startsWith(path));
+        return (
+          <li>
+            <a href={path} class:list={[{ active: isActive }]}>
+              {name}
+            </a>
+          </li>
+        );
+      })
+    }
+  </ul>
+</nav>
+
+<style>
+  nav {
+    padding: 1.5rem 0;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 1.5rem;
+    list-style: none;
+    padding: 0;
+  }
+
+  a {
+    text-decoration: none;
+    color: var(--text-muted);
+    font-size: var(--text-base);
+    font-weight: 500;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-base);
+    position: relative;
+  }
+
+  a:hover {
+    color: var(--text-color);
+    background-color: var(--hover-bg);
+  }
+
+  a.active {
+    color: var(--primary-color);
+    font-weight: 600;
+  }
+
+  /* 添加美观的下划线效果 */
+  a.active::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0.75rem;
+    right: 0.75rem;
+    height: 2px;
+    background: var(--primary-gradient);
+    border-radius: 2px;
+    transform-origin: center;
+    transform: scaleX(0.8);
+    transition: transform 0.2s ease;
+  }
+
+  a.active:hover::after {
+    transform: scaleX(1);
+  }
+
+  @media (max-width: 640px) {
+    .nav-links {
+      gap: 1rem;
+    }
+    
+    a {
+      font-size: var(--text-sm);
+      padding: 0.4rem 0.6rem;
+    }
+  }
+</style> 
