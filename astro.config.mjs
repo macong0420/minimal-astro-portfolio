@@ -11,4 +11,9 @@ export default defineConfig({
     //   wrap: true
     // }
   },
+  build: {
+    rollupOptions: {
+      external: ['prismjs/themes/prism-tomorrow.css']
+    }
+  },
 }); 

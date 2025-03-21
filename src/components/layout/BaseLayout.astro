@@ -14,7 +14,6 @@ import interMediumWoff2 from "@fontsource/inter/files/inter-latin-500-normal.wof
 import robotoMonoRegularWoff2 from "@fontsource/roboto-mono/files/roboto-mono-latin-400-normal.woff2?url";
 import { ClientRouter } from "astro:transitions";
 import Navigation from "../shared/Navigation.astro";
-import "prismjs/themes/prism-tomorrow.css";
 
 interface Props {
   title: string;
@@ -76,6 +75,7 @@ const { title, description, image = "/default-og-image.jpg", canonicalURL = Astr
         }, 1000);
       });
     </script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
   </head>
   <body>
     <div class="top-glow" transition:persist></div>
@@ -86,6 +86,9 @@ const { title, description, image = "/default-og-image.jpg", canonicalURL = Astr
       <main><slot /></main>
     </main>
     <div class="bottom-glow" transition:persist></div>
-    <script is:inline src="/prism.js"></script>
+    <script is:inline src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script is:inline src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js"></script>
+    <script is:inline src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+    <script is:inline src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
   </body>
 </html>
