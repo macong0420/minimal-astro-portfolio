@@ -26,13 +26,11 @@ const formatDate = (date) => {
 ---
 
 <BaseLayout title={entry.data.title} description={entry.data.description}>
-  <article class="blog-post">
-    <header>
-      <h1>{entry.data.title}</h1>
-      <time datetime={entry.data.publishedAt.toISOString()}>
-        {formatDate(entry.data.publishedAt)}
-      </time>
-    </header>
+  <article id="blog-article">
+    <h1>{entry.data.title}</h1>
+    <time datetime={entry.data.publishedAt.toISOString()}>
+      {formatDate(entry.data.publishedAt)}
+    </time>
     
     <div class="blog-content">
       <Content />
@@ -40,54 +38,36 @@ const formatDate = (date) => {
   </article>
 </BaseLayout>
 
-<style>
-  .blog-post {
-    padding: 0 1.5rem;
-    max-width: 768px;
-    margin: 0 auto;
-    width: 100%;
+<style is:global>
+  /* 博客文章容器 */
+  #blog-article {
+    max-width: 768px !important;
+    margin: 0 auto !important;
+    width: 100% !important;
   }
 
-  .blog-content {
-    margin-top: 2rem;
-    padding: 0 1.5rem;
+  /* 基本样式 */
+  #blog-article h1 {
+    font-size: 2.5rem !important;
+    line-height: 1.2 !important;
+    margin-bottom: 1rem !important;
   }
 
-  h1 {
-    font-size: 2.5rem;
-    line-height: 1.2;
-    margin-bottom: 1rem;
-    padding: 0 1.5rem;
+  #blog-article time {
+    color: var(--text-muted) !important;
+    font-size: 0.9rem !important;
+    display: block !important;
+    margin-bottom: 1.5rem !important;
   }
 
-  time {
-    color: var(--text-muted);
-    font-size: 0.9rem;
-    padding: 0 1.5rem;
-    display: block;
+  #blog-article .blog-content {
+    width: 100% !important;
   }
 
-  header {
-    margin-bottom: 2rem;
-    padding: 0 1.5rem;
-  }
-
+  /* 移动设备适配 */
   @media (max-width: 640px) {
-    .blog-post {
-      padding: 0 1.5rem;
-    }
-    
-    .blog-content {
-      padding: 0 1.5rem;
-    }
-    
-    h1 {
-      font-size: 2rem;
-      padding: 0 1.5rem;
-    }
-    
-    header {
-      padding: 0 1.5rem;
+    #blog-article h1 {
+      font-size: 2rem !important;
     }
   }
 </style> 

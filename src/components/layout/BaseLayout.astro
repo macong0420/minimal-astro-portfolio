@@ -12,8 +12,14 @@ import interLightWoff2 from "@fontsource/inter/files/inter-latin-300-normal.woff
 import interRegularWoff2 from "@fontsource/inter/files/inter-latin-400-normal.woff2?url";
 import interMediumWoff2 from "@fontsource/inter/files/inter-latin-500-normal.woff2?url";
 import robotoMonoRegularWoff2 from "@fontsource/roboto-mono/files/roboto-mono-latin-400-normal.woff2?url";
-import { ClientRouter } from "astro:transitions";
+import { ClientRouter, ViewTransitions } from "astro:transitions";
 import Navigation from "../shared/Navigation.astro";
+import "../../../node_modules/@fontsource/inter/index.css";
+import "../../../node_modules/@fontsource/inter/300.css";
+import "../../../node_modules/@fontsource/inter/400.css";
+import "../../../node_modules/@fontsource/inter/500.css";
+import "../../../node_modules/@fontsource/roboto-mono/index.css";
+import "../../styles/index.css";
 
 interface Props {
   title: string;
@@ -26,7 +32,7 @@ const { title, description, image = "/default-og-image.jpg", canonicalURL = Astr
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -56,6 +62,7 @@ const { title, description, image = "/default-og-image.jpg", canonicalURL = Astr
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <ClientRouter />
+    <ViewTransitions />
     <script is:inline>
       // 从localStorage获取主题
       const theme = localStorage.getItem('theme') || 'light';
@@ -80,11 +87,13 @@ const { title, description, image = "/default-og-image.jpg", canonicalURL = Astr
   </head>
   <body>
     <div class="top-glow" transition:persist></div>
-    <main>
+    <main class="main-content">
       <div class="nav-container">
         <Navigation />
       </div>
-      <main><slot /></main>
+      <div class="content-wrapper">
+        <slot />
+      </div>
     </main>
     <div class="bottom-glow" transition:persist></div>
     <script is:inline src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
@@ -97,3 +106,49 @@ const { title, description, image = "/default-og-image.jpg", canonicalURL = Astr
     <script is:inline src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-yaml.min.js"></script>
   </body>
 </html>
+
+<style>
+  main {
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    margin: 0;
+    position: relative;
+  }
+  
+  /* 添加响应式内边距 */
+  .content-wrapper {
+    width: 100%;
+    max-width: 100%;
+    padding: 0 1.5rem;
+    box-sizing: border-box;
+  }
+  
+  /* 平板设备增加内边距 */
+  @media (min-width: 768px) {
+    .content-wrapper {
+      padding: 0 10%;
+    }
+  }
+  
+  /* 桌面端使用15%的左右间距，使内容占70% */
+  @media (min-width: 1024px) {
+    .content-wrapper {
+      padding: 0 15%;
+    }
+  }
+  
+  /* 超宽屏幕设置最大宽度 */
+  @media (min-width: 1920px) {
+    .content-wrapper {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+  }
+  
+  /* 确保博客页面也应用相同的间距规则 */
+  :global(body:has(#blog-article) .content-wrapper) {
+    padding: inherit;
+  }
+</style>
