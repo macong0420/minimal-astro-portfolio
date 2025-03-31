@@ -26,12 +26,14 @@ const isActive = (path: string) => {
 
 <style>
   nav {
-    padding: 1.5rem 0;
+    padding: 1.5rem 1rem;
   }
 
   .nav-container {
     display: flex;
     width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
     justify-content: flex-start;
     align-items: center;
     gap: 2rem;
@@ -83,6 +85,10 @@ const isActive = (path: string) => {
   }
 
   @media (max-width: 640px) {
+    nav {
+      padding: 1.5rem 1.5rem;
+    }
+    
     .nav-links {
       gap: 1rem;
     }

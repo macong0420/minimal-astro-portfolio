@@ -13,11 +13,14 @@ const { class: className } = Astro.props;
 <style>
   .container {
     padding: 0 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
   }
 
   @media (max-width: 640px) {
     .container {
-      padding: 0 1rem;
+      padding: 0 1.5rem;
     }
   }
 </style>

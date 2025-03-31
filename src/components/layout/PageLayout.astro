@@ -20,11 +20,13 @@ const { title, description } = Astro.props;
 <style>
   .container {
     padding: 0 1.5rem;
+    max-width: 640px;
+    margin: 0 auto;
+    width: 100%;
   }
 
   main {
     width: 100%;
-    max-width: 640px;
     margin: 0 auto;
     padding: 2rem 0;
   }
@@ -35,7 +37,7 @@ const { title, description } = Astro.props;
     }
 
     .container {
-      padding: 0 1rem;
+      padding: 0 1.5rem;
     }
   }
 </style>
