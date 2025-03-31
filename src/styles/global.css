@@ -54,7 +54,7 @@ body {
 
 main {
   width: 100%;
-  max-width: 640px;
+  max-width: 100%;
   margin: 0 auto;
   padding: 2rem 0;
   position: relative;
@@ -76,6 +76,11 @@ main {
 
   .nav-container {
     padding: 0 1rem;
+  }
+
+  article, section, .content, .container {
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
   }
 }
 
