@@ -1,0 +1,71 @@
+---
+interface Props {
+  tags: string[];
+  class?: string;
+}
+
+const { tags = [], class: className = "" } = Astro.props;
+
+// 预设的渐变色组合
+const gradients = [
+  "from-blue-500/20 to-indigo-500/20",
+  "from-rose-500/20 to-pink-500/20",
+  "from-violet-500/20 to-purple-500/20",
+  "from-amber-500/20 to-orange-500/20",
+  "from-emerald-500/20 to-teal-500/20",
+  "from-cyan-500/20 to-sky-500/20",
+];
+
+// 对标签进行排序，不区分大小写
+const sortedTags = [...tags].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+---
+
+<div class:list={["tags-container", className]}>
+  {
+    sortedTags.map((tag, index) => (
+      <a
+        href={`/blog/tags/${tag.toLowerCase()}`}
+        class:list={[
+          "tag",
+          "bg-gradient-to-br",
+          gradients[index % gradients.length],
+        ]}
+      >
+        {tag}
+      </a>
+    ))
+  }
+</div>
+
+<style>
+  .tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    text-decoration: none;
+    color: var(--text-color);
+    font-size: var(--text-sm);
+    border: 1px solid var(--border-color);
+    backdrop-filter: blur(8px);
+    transition: all 0.2s ease;
+  }
+
+  .tag:hover {
+    transform: translateY(-1px) scale(1.05);
+    background-color: var(--hover-bg);
+    border-color: transparent;
+  }
+
+  @media (max-width: 640px) {
+    .tag {
+      font-size: var(--text-xs);
+      padding: 0.2rem 0.6rem;
+    }
+  }
+</style>

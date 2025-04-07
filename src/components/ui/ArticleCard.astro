@@ -1,4 +1,6 @@
 ---
+import Tags from "../shared/Tags.astro";
+
 interface Props {
   title: string;
   description?: string;
@@ -25,14 +27,10 @@ const formatDate = (date: Date | undefined) => {
   </div>
   {description && <p class="muted-text">{description}</p>}
   <div class="article-footer">
-    {date && <time datetime={date.toISOString()}>{formatDate(date)}</time>}
     {tags && tags.length > 0 && (
-      <div class="tags">
-        {tags.map((tag) => (
-          <span>{tag}</span>
-        ))}
-      </div>
+      <Tags tags={tags} />
     )}
+    {date && <time datetime={date.toISOString()}>{formatDate(date)}</time>}
   </div>
 </article>
 
@@ -78,13 +76,14 @@ const formatDate = (date: Date | undefined) => {
     justify-content: space-between;
     align-items: center;
     margin-top: 1rem;
+    gap: 1rem;
   }
   
   time {
     text-align: right;
     font-size: var(--text-xs);
     color: var(--text-muted);
-    margin-left: auto;
+    white-space: nowrap;
   }
   
   .tags {

@@ -2,6 +2,7 @@
 import { getCollection, render } from "astro:content";
 import type { GetStaticPaths } from "astro";
 import BaseLayout from "../../components/layout/BaseLayout.astro";
+import Tags from "../../components/shared/Tags.astro";
 
 export const getStaticPaths = (async () => {
   const posts = await getCollection("blog");
@@ -27,9 +28,14 @@ const formatDate = (date: Date) => {
   <article class="post">
     <header>
       <h1>{post.data.title}</h1>
-      <time datetime={post.data.publishedAt.toISOString()}>
-        {formatDate(post.data.publishedAt)}
-      </time>
+      <div class="metadata">
+        <time datetime={post.data.publishedAt.toISOString()}>
+          {formatDate(post.data.publishedAt)}
+        </time>
+        {post.data.tags && post.data.tags.length > 0 && (
+          <Tags tags={post.data.tags} class="article-tags" />
+        )}
+      </div>
     </header>
     <div class="content">
       <Content />
@@ -57,9 +63,20 @@ const formatDate = (date: Date) => {
     margin-bottom: 0.5rem;
   }
 
+  .metadata {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin: 1rem 0 2rem;
+  }
+
   time {
     color: var(--text-muted);
     font-size: var(--text-sm);
+  }
+
+  .article-tags {
+    margin-top: 0.5rem;
   }
 
   .content {

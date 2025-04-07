@@ -1,0 +1,90 @@
+---
+import { getCollection } from "astro:content";
+import type { GetStaticPaths } from "astro";
+import BaseLayout from "../../../components/layout/BaseLayout.astro";
+import Container from "../../../components/ui/Container.astro";
+import ArticleCard from "../../../components/ui/ArticleCard.astro";
+import Tags from "../../../components/shared/Tags.astro";
+
+export const getStaticPaths = (async () => {
+  const posts = await getCollection("blog", ({ data }) => {
+    return import.meta.env.PROD ? !data.draft : true;
+  });
+
+  // 收集所有标签
+  const allTags = [...new Set(posts.flatMap(post => post.data.tags || []))];
+
+  // 为每个标签创建一个页面
+  return allTags.map(tag => {
+    const filteredPosts = posts.filter(post => 
+      post.data.tags?.map(t => t.toLowerCase()).includes(tag.toLowerCase())
+    );
+
+    return {
+      params: { tag: tag.toLowerCase() },
+      props: { tag, posts: filteredPosts },
+    };
+  });
+}) satisfies GetStaticPaths;
+
+const { tag, posts } = Astro.props;
+
+// 按日期排序文章
+const sortedPosts = posts.sort(
+  (a, b) => b.data.publishedAt.getTime() - a.data.publishedAt.getTime()
+);
+---
+
+<BaseLayout 
+  title={`标签: ${tag} | 博客`}
+  description={`包含 "${tag}" 标签的所有文章`}
+>
+  <Container>
+    <div class="tag-header">
+      <h1>标签: {tag}</h1>
+      <p class="subtitle">共 {posts.length} 篇文章</p>
+      <Tags tags={[tag]} />
+    </div>
+
+    <div class="posts-container">
+      {sortedPosts.map((post) => (
+        <ArticleCard
+          title={post.data.title}
+          description={post.data.description}
+          url={`/blog/${post.id}`}
+          date={post.data.publishedAt}
+          tags={post.data.tags}
+        />
+      ))}
+    </div>
+  </Container>
+</BaseLayout>
+
+<style>
+  .tag-header {
+    margin: 3rem 0;
+    text-align: center;
+  }
+
+  h1 {
+    font-size: var(--text-3xl);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .subtitle {
+    color: var(--text-muted);
+    font-size: var(--text-lg);
+    margin-bottom: 1rem;
+  }
+
+  .posts-container {
+    margin-top: 2rem;
+  }
+
+  @media (max-width: 640px) {
+    .tag-header {
+      margin: 2rem 0;
+    }
+  }
+</style>
