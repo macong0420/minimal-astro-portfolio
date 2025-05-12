@@ -13,3 +13,4 @@ tags: ["iOS", "软件", "限免"]
 - 4. Joi Planner 日历计划
 - 5. UltraNotes 笔记app
 - 6. 速拼 截图拼接长图
+- 7. 灵感卡片 

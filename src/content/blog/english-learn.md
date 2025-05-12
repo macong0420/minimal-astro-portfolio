@@ -1,6 +1,6 @@
 ---
 title: "200个句子学习10000个雅思单词"
-description: ""
+description: "00个句子学习10000个雅思单词"
 publishedAt: 2025-04-10
 tags: ["GPT", "写作", "AI"]
 ---
