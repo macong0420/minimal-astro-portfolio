@@ -7,7 +7,6 @@ tags: ["Cherry Studio", "AI", "css", "UI"]
 
 ## 简介
 
-
 Cherry Studio毛玻璃主题采用现代CSS视效技术，通过多层半透明叠加与智能模糊算法，构建具有空间纵深感的Windows Aero风格界面。该主题实现以下核心特性：
 
 动态透明度系统
