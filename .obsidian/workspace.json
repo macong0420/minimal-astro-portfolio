@@ -1,73 +1,20 @@
 {
   "main": {
-    "id": "fdeda3cca82e9b49",
+    "id": "0398ae1076c38842",
     "type": "split",
     "children": [
       {
-        "id": "ea7bd5c625b7ec44",
+        "id": "ed8f83350d12f667",
         "type": "tabs",
         "children": [
           {
-            "id": "a5b826d5a4631331",
+            "id": "ee2585d89a4d54b8",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "中文命名测试.md",
-                "mode": "source",
-                "source": true
-              },
+              "type": "empty",
+              "state": {},
               "icon": "lucide-file",
-              "title": "中文命名测试"
-            }
-          },
-          {
-            "id": "eb414ae536c7c69b",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "中文命名测试.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "中文命名测试"
-            }
-          },
-          {
-            "id": "a5409304e1ff9ec9",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "中文命名测试.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "中文命名测试"
-            }
-          }
-        ],
-        "currentTab": 1
-      },
-      {
-        "id": "82b24d374a6dcf85",
-        "type": "tabs",
-        "children": [
-          {
-            "id": "01135f8b82ce4606",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "cherry-studio-ui.md",
-                "mode": "preview",
-                "source": true
-              },
-              "icon": "lucide-file",
-              "title": "cherry-studio-ui"
+              "title": "新标签页"
             }
           }
         ]
@@ -76,15 +23,15 @@
     "direction": "vertical"
   },
   "left": {
-    "id": "6e6456bb7345161d",
+    "id": "3a3fba08b9bacab7",
     "type": "split",
     "children": [
       {
-        "id": "e19a821b7730aa4d",
+        "id": "d3f20a9b62efd578",
         "type": "tabs",
         "children": [
           {
-            "id": "9ef38de93b67b5c5",
+            "id": "0056bd3d387c6e28",
             "type": "leaf",
             "state": {
               "type": "file-explorer",
@@ -97,7 +44,7 @@
             }
           },
           {
-            "id": "d13d2b1c81d1da9b",
+            "id": "cd6c0c69711881d1",
             "type": "leaf",
             "state": {
               "type": "search",
@@ -114,7 +61,7 @@
             }
           },
           {
-            "id": "a54c6032294fc19d",
+            "id": "4e523cc255c14803",
             "type": "leaf",
             "state": {
               "type": "bookmarks",
@@ -130,20 +77,19 @@
     "width": 300
   },
   "right": {
-    "id": "275d5e8adcd95be9",
+    "id": "ba0295946a44a70d",
     "type": "split",
     "children": [
       {
-        "id": "6eb6b217ba892814",
+        "id": "4b06d9fc833cd59e",
         "type": "tabs",
         "children": [
           {
-            "id": "60b90950fc01fe3b",
+            "id": "0b0ba187e531642b",
             "type": "leaf",
             "state": {
               "type": "backlink",
               "state": {
-                "file": "中文命名测试.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -153,25 +99,24 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "中文命名测试 的反向链接列表"
+              "title": "反向链接"
             }
           },
           {
-            "id": "57bd66de6ac4aa63",
+            "id": "3ad349266ff3dfed",
             "type": "leaf",
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "中文命名测试.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "中文命名测试 的出链列表"
+              "title": "出链"
             }
           },
           {
-            "id": "a4aefe334a61b454",
+            "id": "48c0e7a7e444ed02",
             "type": "leaf",
             "state": {
               "type": "tag",
@@ -186,18 +131,17 @@
             }
           },
           {
-            "id": "ebfa331f42e8294f",
+            "id": "cc1f926bd2820262",
             "type": "leaf",
             "state": {
               "type": "outline",
               "state": {
-                "file": "中文命名测试.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "中文命名测试 的大纲"
+              "title": "大纲"
             }
           }
         ]
@@ -217,19 +161,10 @@
       "command-palette:打开命令面板": false
     }
   },
-  "active": "eb414ae536c7c69b",
+  "active": "ee2585d89a4d54b8",
   "lastOpenFiles": [
-    "模版/模版.md",
-    "中文命名测试.md",
-    "模版",
-    "cherry-studio-ui.md",
-    "github-source.md",
-    "git-des.md",
-    "free-app.md",
-    "english-learn.md",
-    "cursor-rule.md",
-    "prompt-no-ai.md",
-    "prompt-wechat.md",
-    "cherry-studio-ui-v2.md"
+    "template/template.md",
+    "template/模版.md",
+    "template"
   ]
 }
