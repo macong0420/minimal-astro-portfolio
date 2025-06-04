@@ -4,6 +4,8 @@ dist/
 # generated types
 .astro/
 
+.obsidian/*
+
 .obsidian/
 template/
 
