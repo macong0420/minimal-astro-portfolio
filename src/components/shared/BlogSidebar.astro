@@ -1,0 +1,247 @@
+---
+import { getCollection } from "astro:content";
+import type { CollectionEntry } from "astro:content";
+
+// 获取所有博客文章
+const posts = await getCollection("blog", ({ data }: CollectionEntry<"blog">) => {
+  return import.meta.env.PROD ? !data.draft : true;
+});
+
+// 按发布日期排序
+const sortedPosts = posts.sort(
+  (a: CollectionEntry<"blog">, b: CollectionEntry<"blog">) =>
+    b.data.publishedAt.getTime() - a.data.publishedAt.getTime()
+);
+
+// 按年份分组
+const postsByYear = sortedPosts.reduce((acc, post) => {
+  const year = post.data.publishedAt.getFullYear();
+  if (!acc[year]) {
+    acc[year] = [];
+  }
+  acc[year].push(post);
+  return acc;
+}, {} as Record<number, CollectionEntry<"blog">[]>);
+
+// 获取年份并排序（最新的在前）
+const years = Object.keys(postsByYear)
+  .map(Number)
+  .sort((a, b) => b - a);
+
+// 默认选中第一篇文章
+const defaultSlug = sortedPosts[0]?.id;
+---
+
+<aside class="blog-sidebar">
+  <div class="sidebar-header">
+    <h2>所有文章</h2>
+  </div>
+  
+  <div class="posts-list">
+    {years.map(year => (
+      <div class="year-group">
+        <h3 class="year-title">{year}</h3>
+        <ul class="posts-in-year">
+          {postsByYear[year].map(post => (
+            <li class="post-item">
+              <a
+                href={`/?post=${post.id}`}
+                class={`post-link ${defaultSlug === post.id ? 'active' : ''}`}
+                data-post-id={post.id}
+              >
+                {post.data.title}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </div>
+</aside>
+
+<style>
+  .blog-sidebar {
+    width: 100%;
+    height: 100%;
+    background-color: var(--surface-color);
+    border-right: 1px solid var(--border-color);
+    overflow-y: auto;
+  }
+
+  .sidebar-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--bg-color);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .sidebar-header h2 {
+    margin: 0;
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--text-color);
+    border: 2px solid var(--primary-color);
+    border-radius: var(--radius-md);
+    padding: 0.5rem 1rem;
+    text-align: center;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-color));
+    color: white;
+  }
+
+  .posts-list {
+    padding: 1rem 0;
+  }
+
+  .year-group {
+    margin-bottom: 2rem;
+  }
+
+  .year-title {
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0 0 0.75rem 0;
+    padding: 0 1.5rem;
+  }
+
+  .posts-in-year {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .post-item {
+    margin: 0;
+  }
+
+  .post-link {
+    display: block;
+    padding: 0.75rem 1.5rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: var(--text-sm);
+    line-height: 1.4;
+    transition: all var(--transition-base);
+    border-left: 3px solid transparent;
+  }
+
+  .post-link:hover {
+    background-color: var(--hover-bg);
+    color: var(--text-color);
+    border-left-color: var(--primary-color);
+  }
+
+  .post-link.active {
+    background-color: var(--primary-color);
+    color: white;
+    border-left-color: var(--primary-color);
+    font-weight: 500;
+  }
+
+  .post-link.active:hover {
+    background-color: var(--primary-color);
+    color: white;
+  }
+
+  /* 响应式设计 */
+  @media (max-width: 768px) {
+    .blog-sidebar {
+      border-right: none;
+      border-bottom: 1px solid var(--border-color);
+      max-height: 300px;
+    }
+
+    .sidebar-header {
+      padding: 1rem;
+    }
+
+    .sidebar-header h2 {
+      font-size: var(--text-base);
+      padding: 0.4rem 0.8rem;
+    }
+
+    .year-title {
+      padding: 0 1rem;
+      font-size: var(--text-sm);
+    }
+
+    .post-link {
+      padding: 0.6rem 1rem;
+      font-size: var(--text-xs);
+    }
+
+    .posts-list {
+      padding: 0.5rem 0;
+    }
+
+    .year-group {
+      margin-bottom: 1.5rem;
+    }
+  }
+</style>
+
+<script>
+  // 简化的客户端路由处理
+  document.addEventListener('DOMContentLoaded', () => {
+    const postLinks = document.querySelectorAll('.post-link');
+
+    // 从URL获取初始文章ID并设置活跃状态
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialPostId = urlParams.get('post');
+
+    if (initialPostId) {
+      postLinks.forEach(link => {
+        if (link.getAttribute('data-post-id') === initialPostId) {
+          link.classList.add('active');
+        } else {
+          link.classList.remove('active');
+        }
+      });
+    }
+
+    postLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const postId = link.getAttribute('data-post-id');
+
+        // 更新URL参数
+        const url = new URL(window.location);
+        url.searchParams.set('post', postId);
+        window.history.pushState({ postId }, '', url);
+
+        // 更新活跃状态
+        postLinks.forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+
+        // 触发自定义事件通知主内容区域更新
+        window.dispatchEvent(new CustomEvent('postChanged', {
+          detail: { postId }
+        }));
+      });
+    });
+
+    // 监听浏览器前进后退
+    window.addEventListener('popstate', (e) => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const postId = urlParams.get('post');
+
+      if (postId) {
+        // 更新活跃状态
+        postLinks.forEach(link => {
+          if (link.getAttribute('data-post-id') === postId) {
+            link.classList.add('active');
+          } else {
+            link.classList.remove('active');
+          }
+        });
+
+        // 触发文章切换事件
+        window.dispatchEvent(new CustomEvent('postChanged', {
+          detail: { postId }
+        }));
+      }
+    });
+  });
+</script>

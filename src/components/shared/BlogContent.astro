@@ -1,0 +1,545 @@
+---
+import { getCollection, render } from "astro:content";
+import type { CollectionEntry } from "astro:content";
+import Tags from "./Tags.astro";
+
+// 获取所有博客文章
+const posts = await getCollection("blog", ({ data }: CollectionEntry<"blog">) => {
+  return import.meta.env.PROD ? !data.draft : true;
+});
+
+// 按发布日期排序
+const sortedPosts = posts.sort(
+  (a: CollectionEntry<"blog">, b: CollectionEntry<"blog">) =>
+    b.data.publishedAt.getTime() - a.data.publishedAt.getTime()
+);
+
+// 默认显示第一篇文章
+const defaultPost = sortedPosts[0];
+const { Content: DefaultContent } = defaultPost ? await render(defaultPost) : { Content: null };
+
+// 为客户端准备文章列表数据（不包含内容）
+const postsListData = sortedPosts.map(post => ({
+  id: post.id,
+  title: post.data.title,
+  description: post.data.description,
+  publishedAt: post.data.publishedAt.toISOString(),
+  tags: post.data.tags || []
+}));
+
+// 格式化日期
+const formatDate = (date: Date) => {
+  return date.toLocaleDateString("zh-CN", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
+
+// 计算阅读时间（简单估算）
+const calculateReadingTime = (content: string) => {
+  const wordsPerMinute = 200;
+  const words = content.length / 2; // 中文字符估算
+  const minutes = Math.ceil(words / wordsPerMinute);
+  return minutes;
+};
+---
+
+<main class="blog-content">
+  <div class="loading-indicator" style="display: none;">
+    <div class="spinner"></div>
+    <p>加载中...</p>
+  </div>
+
+  {defaultPost ? (
+    <article class="post" id="blog-article" data-post-id={defaultPost.id}>
+      <header class="post-header">
+        <h1 class="post-title">{defaultPost.data.title}</h1>
+        <div class="post-meta">
+          <time datetime={defaultPost.data.publishedAt.toISOString()}>
+            {formatDate(defaultPost.data.publishedAt)}
+          </time>
+          <span class="reading-time">
+            阅读时间 {calculateReadingTime(defaultPost.body)} 分钟
+          </span>
+          {defaultPost.data.tags && defaultPost.data.tags.length > 0 && (
+            <div class="post-tags">
+              <Tags tags={defaultPost.data.tags} />
+            </div>
+          )}
+        </div>
+        {defaultPost.data.description && (
+          <p class="post-description">{defaultPost.data.description}</p>
+        )}
+      </header>
+
+      <div class="post-content">
+        {DefaultContent && <DefaultContent />}
+      </div>
+    </article>
+  ) : (
+    <div class="no-post">
+      <h2>未找到文章</h2>
+      <p>请从左侧选择一篇文章阅读。</p>
+    </div>
+  )}
+</main>
+
+<!-- 将文章列表数据传递给客户端 -->
+<script define:vars={{ postsListData }}>
+  // 将文章列表数据存储在全局变量中
+  window.postsListData = postsListData;
+</script>
+
+<style>
+  .blog-content {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    padding: 2rem;
+    background-color: var(--bg-color);
+  }
+
+  .post {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .post-header {
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .post-title {
+    font-size: var(--text-3xl);
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 0 0 1.5rem 0;
+    color: var(--text-color);
+  }
+
+  .post-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .post-meta time {
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+  }
+
+  .reading-time {
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+  }
+
+  .post-tags {
+    margin-top: 0.5rem;
+  }
+
+  .post-description {
+    font-size: var(--text-lg);
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin: 0;
+    font-style: italic;
+  }
+
+  .post-content {
+    line-height: 1.7;
+    color: var(--text-color);
+  }
+
+  /* 文章内容样式 */
+  .post-content :global(h1),
+  .post-content :global(h2),
+  .post-content :global(h3),
+  .post-content :global(h4),
+  .post-content :global(h5),
+  .post-content :global(h6) {
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    line-height: 1.3;
+  }
+
+  .post-content :global(h2) {
+    font-size: var(--text-2xl);
+    font-weight: 600;
+  }
+
+  .post-content :global(h3) {
+    font-size: var(--text-xl);
+    font-weight: 600;
+  }
+
+  .post-content :global(p) {
+    margin-bottom: 1.5rem;
+    line-height: 1.7;
+  }
+
+  .post-content :global(img) {
+    border-radius: 0.5rem;
+    margin: 2rem 0;
+    max-width: 100%;
+    height: auto;
+  }
+
+  .post-content :global(blockquote) {
+    border-left: 4px solid var(--primary-color);
+    padding-left: 1.5rem;
+    margin: 2rem 0;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  .post-content :global(pre) {
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    background: var(--code-bg) !important;
+    overflow-x: auto;
+    margin: 2rem 0;
+    font-size: var(--text-sm);
+  }
+
+  .post-content :global(code) {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+  }
+
+  .post-content :global(a) {
+    color: var(--link-color);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+  }
+
+  .post-content :global(a:hover) {
+    color: var(--link-hover);
+  }
+
+  .post-content :global(ul),
+  .post-content :global(ol) {
+    margin: 1.5rem 0;
+    padding-left: 2rem;
+  }
+
+  .post-content :global(li) {
+    margin: 0.5rem 0;
+    line-height: 1.6;
+  }
+
+  .post-content :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 2rem 0;
+  }
+
+  .post-content :global(th),
+  .post-content :global(td) {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .post-content :global(th) {
+    font-weight: 600;
+    background-color: var(--surface-color);
+  }
+
+  .no-post {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-muted);
+  }
+
+  .no-post h2 {
+    margin-bottom: 1rem;
+    color: var(--text-color);
+  }
+
+  /* 加载指示器样式 */
+  .loading-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    color: var(--text-muted);
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-color);
+    border-top: 3px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* 错误信息样式 */
+  .error-message {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-muted);
+  }
+
+  .error-message h2 {
+    color: #ef4444;
+    margin-bottom: 1rem;
+  }
+
+  .error-message p {
+    color: var(--text-muted);
+  }
+
+  /* 响应式设计 */
+  @media (max-width: 768px) {
+    .blog-content {
+      padding: 1rem;
+    }
+
+    .post-title {
+      font-size: var(--text-2xl);
+    }
+
+    .post-meta {
+      gap: 0.75rem;
+    }
+
+    .post-content :global(h2) {
+      font-size: var(--text-xl);
+    }
+
+    .post-content :global(h3) {
+      font-size: var(--text-lg);
+    }
+  }
+</style>
+
+<script>
+  // 客户端文章切换逻辑
+  class BlogContentManager {
+    constructor() {
+      this.currentPostId = null;
+      this.init();
+    }
+
+    init() {
+      // 监听文章切换事件
+      window.addEventListener('postChanged', (event) => {
+        this.loadPost(event.detail.postId);
+      });
+
+      // 从URL获取初始文章ID
+      const urlParams = new URLSearchParams(window.location.search);
+      const initialPostId = urlParams.get('post');
+
+      if (initialPostId && window.blogPosts) {
+        const post = window.blogPosts.find(p => p.id === initialPostId);
+        if (post) {
+          this.loadPost(initialPostId);
+        }
+      }
+    }
+
+    showLoading() {
+      const loadingIndicator = document.querySelector('.loading-indicator');
+      const article = document.querySelector('.post');
+
+      if (loadingIndicator) loadingIndicator.style.display = 'flex';
+      if (article) article.style.display = 'none';
+    }
+
+    hideLoading() {
+      const loadingIndicator = document.querySelector('.loading-indicator');
+      const article = document.querySelector('.post');
+
+      if (loadingIndicator) loadingIndicator.style.display = 'none';
+      if (article) article.style.display = 'block';
+    }
+
+    formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("zh-CN", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    }
+
+    calculateReadingTime(content) {
+      const wordsPerMinute = 200;
+      const words = content.length / 2;
+      const minutes = Math.ceil(words / wordsPerMinute);
+      return minutes;
+    }
+
+    renderTags(tags) {
+      if (!tags || tags.length === 0) return '';
+
+      return `
+        <div class="post-tags">
+          <div class="tags">
+            ${tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    async loadPost(postId) {
+      if (!window.postsListData) {
+        console.error('Posts list data not available');
+        return;
+      }
+
+      // 检查文章是否存在于列表中
+      const postExists = window.postsListData.find(p => p.id === postId);
+      if (!postExists) {
+        console.error('Post not found in list:', postId);
+        return;
+      }
+
+      this.showLoading();
+
+      try {
+        // 从API获取文章详细内容
+        const response = await fetch(`/api/posts/${postId}.json`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const post = await response.json();
+
+        const article = document.querySelector('.post');
+        if (!article) return;
+
+        // 更新文章内容
+        article.setAttribute('data-post-id', post.id);
+
+        // 更新标题
+        const title = article.querySelector('.post-title');
+        if (title) title.textContent = post.title;
+
+        // 更新日期
+        const time = article.querySelector('time');
+        if (time) {
+          time.setAttribute('datetime', post.publishedAt);
+          time.textContent = post.formattedDate;
+        }
+
+        // 更新阅读时间
+        const readingTime = article.querySelector('.reading-time');
+        if (readingTime) {
+          readingTime.textContent = `阅读时间 ${post.readingTime} 分钟`;
+        }
+
+        // 更新标签
+        const existingTags = article.querySelector('.post-tags');
+        if (existingTags) existingTags.remove();
+
+        if (post.tags && post.tags.length > 0) {
+          const metaDiv = article.querySelector('.post-meta');
+          if (metaDiv) {
+            metaDiv.insertAdjacentHTML('beforeend', this.renderTags(post.tags));
+          }
+        }
+
+        // 更新描述
+        const description = article.querySelector('.post-description');
+        if (description) {
+          if (post.description) {
+            description.textContent = post.description;
+            description.style.display = 'block';
+          } else {
+            description.style.display = 'none';
+          }
+        }
+
+        // 更新文章内容
+        const contentDiv = article.querySelector('.post-content');
+        if (contentDiv) {
+          contentDiv.innerHTML = this.renderMarkdownContent(post.body);
+        }
+
+        this.currentPostId = postId;
+
+      } catch (error) {
+        console.error('Error loading post:', error);
+        // 显示错误信息
+        const article = document.querySelector('.post');
+        if (article) {
+          article.innerHTML = `
+            <div class="error-message">
+              <h2>加载失败</h2>
+              <p>无法加载文章内容，请稍后重试。</p>
+            </div>
+          `;
+        }
+      } finally {
+        this.hideLoading();
+      }
+    }
+
+    renderMarkdownContent(markdown) {
+      // 改进的Markdown渲染器
+      let html = markdown;
+
+      // 处理代码块
+      html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
+        return `<pre><code class="language-${lang || 'text'}">${this.escapeHtml(code.trim())}</code></pre>`;
+      });
+
+      // 处理行内代码
+      html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+      // 处理标题
+      html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+      html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+      html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+
+      // 处理粗体和斜体
+      html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+      // 处理链接
+      html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
+      // 处理列表
+      html = html.replace(/^\* (.+)$/gim, '<li>$1</li>');
+      html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+
+      // 处理段落
+      html = html.split('\n\n').map(paragraph => {
+        paragraph = paragraph.trim();
+        if (!paragraph) return '';
+        if (paragraph.startsWith('<h') || paragraph.startsWith('<pre') ||
+            paragraph.startsWith('<ul') || paragraph.startsWith('<ol')) {
+          return paragraph;
+        }
+        return `<p>${paragraph}</p>`;
+      }).join('\n');
+
+      return html;
+    }
+
+    escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  }
+
+  // 初始化内容管理器
+  document.addEventListener('DOMContentLoaded', () => {
+    new BlogContentManager();
+  });
+</script>

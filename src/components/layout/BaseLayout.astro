@@ -123,21 +123,36 @@ const { title, description, image = "/default-og-image.jpg", canonicalURL = Astr
     padding: 0 1.5rem;
     box-sizing: border-box;
   }
-  
+
+  /* 首页特殊布局 - 移除内边距 */
+  :global(body:has(.home-layout) .content-wrapper) {
+    padding: 0;
+  }
+
   /* 平板设备增加内边距 */
   @media (min-width: 768px) {
     .content-wrapper {
       padding: 0 10%;
     }
+
+    /* 首页在平板设备上也移除内边距 */
+    :global(body:has(.home-layout) .content-wrapper) {
+      padding: 0;
+    }
   }
-  
+
   /* 桌面端使用15%的左右间距，使内容占70% */
   @media (min-width: 1024px) {
     .content-wrapper {
       padding: 0 15%;
     }
+
+    /* 首页在桌面端也移除内边距 */
+    :global(body:has(.home-layout) .content-wrapper) {
+      padding: 0;
+    }
   }
-  
+
   /* 超宽屏幕设置最大宽度 */
   @media (min-width: 1920px) {
     .content-wrapper {
@@ -145,8 +160,15 @@ const { title, description, image = "/default-og-image.jpg", canonicalURL = Astr
       margin: 0 auto;
       padding: 0 2rem;
     }
+
+    /* 首页在超宽屏幕上也移除内边距和最大宽度限制 */
+    :global(body:has(.home-layout) .content-wrapper) {
+      max-width: 100%;
+      margin: 0;
+      padding: 0;
+    }
   }
-  
+
   /* 确保博客页面也应用相同的间距规则 */
   :global(body:has(#blog-article) .content-wrapper) {
     padding: inherit;

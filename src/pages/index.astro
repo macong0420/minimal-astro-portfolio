@@ -1,3 +1,78 @@
 ---
-return Astro.redirect('/blog');
+import BaseLayout from "../components/layout/BaseLayout.astro";
+import BlogSidebar from "../components/shared/BlogSidebar.astro";
+import BlogContent from "../components/shared/BlogContent.astro";
 ---
+
+<BaseLayout title="首页 | Mr.C" description="我的技术博客和思考">
+  <div class="home-layout">
+    <div class="sidebar-container">
+      <BlogSidebar />
+    </div>
+    <div class="content-container">
+      <BlogContent />
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .home-layout {
+    display: flex;
+    height: calc(100vh - 120px); /* 减去导航栏高度 */
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .sidebar-container {
+    width: 320px;
+    min-width: 320px;
+    height: 100%;
+    background-color: var(--surface-color);
+    border-right: 1px solid var(--border-color);
+  }
+
+  .content-container {
+    flex: 1;
+    height: 100%;
+    overflow: hidden;
+    background-color: var(--bg-color);
+  }
+
+  /* 响应式设计 */
+  @media (max-width: 1024px) {
+    .sidebar-container {
+      width: 280px;
+      min-width: 280px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .home-layout {
+      flex-direction: column;
+      height: auto;
+      min-height: calc(100vh - 120px);
+    }
+
+    .sidebar-container {
+      width: 100%;
+      min-width: auto;
+      height: 300px;
+      border-right: none;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .content-container {
+      height: auto;
+      min-height: calc(100vh - 420px);
+    }
+  }
+
+  @media (max-width: 480px) {
+    .sidebar-container {
+      height: 250px;
+    }
+  }
+</style>
