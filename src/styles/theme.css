@@ -127,7 +127,7 @@ body {
   }
 }
 
-/* 移除代码块白色背景 */
+/* 修复代码块样式 */
 pre {
   background-color: var(--code-bg) !important;
   border: none;
@@ -135,7 +135,7 @@ pre {
   padding: 1.25rem;
   margin: 1.5rem 0;
   overflow-x: auto;
-  color: var(--code-text);
+  color: var(--code-color, #e0e0e0) !important;
   font-size: 0.95em;
   line-height: 1.5;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
@@ -147,12 +147,14 @@ code {
   background-color: transparent !important;
   padding: 0.2em 0.4em;
   border-radius: var(--radius-sm);
+  color: var(--code-color, #e0e0e0);
 }
 
 pre code {
   padding: 0;
-  background-color: transparent;
+  background-color: transparent !important;
   border-radius: 0;
+  color: var(--code-color, #e0e0e0) !important;
 }
 
 /* 语法高亮 */
@@ -180,11 +182,18 @@ pre code {
 /* 行内代码样式 */
 :not(pre) > code {
   background-color: rgba(0, 0, 0, 0.05) !important;
-  color: var(--text-color);
+  color: var(--text-color) !important;
   padding: 0.2em 0.4em;
   border-radius: var(--radius-sm);
   font-size: 0.9em;
   border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* 深色主题下的行内代码样式 */
+[data-theme="dark"] :not(pre) > code {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: var(--text-color) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* 更多语法高亮类型 */

@@ -198,15 +198,38 @@ const calculateReadingTime = (content: string) => {
   .post-content :global(pre) {
     padding: 1.5rem;
     border-radius: 0.5rem;
-    background: var(--code-bg) !important;
+    background: var(--code-bg, #1d1f21) !important;
+    color: var(--code-color, #e0e0e0) !important;
     overflow-x: auto;
     margin: 2rem 0;
     font-size: var(--text-sm);
   }
 
+  .post-content :global(pre code) {
+    color: var(--code-color, #e0e0e0) !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
   .post-content :global(code) {
     font-family: var(--font-mono);
     font-size: 0.9em;
+    color: var(--code-color, #e0e0e0);
+  }
+
+  .post-content :global(:not(pre) > code) {
+    background-color: rgba(0, 0, 0, 0.05) !important;
+    color: var(--text-color) !important;
+    padding: 0.2em 0.4em !important;
+    border-radius: 0.25rem !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  }
+
+  /* 深色主题下的行内代码 */
+  :global([data-theme="dark"]) .post-content :global(:not(pre) > code) {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: var(--text-color) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
   }
 
   .post-content :global(a) {
@@ -334,8 +357,11 @@ const calculateReadingTime = (content: string) => {
     }
 
     init() {
+      console.log('BlogContentManager initialized');
+
       // 监听文章切换事件
       window.addEventListener('postChanged', (event) => {
+        console.log('Received postChanged event:', event.detail.postId);
         this.loadPost(event.detail.postId);
       });
 
@@ -343,12 +369,33 @@ const calculateReadingTime = (content: string) => {
       const urlParams = new URLSearchParams(window.location.search);
       const initialPostId = urlParams.get('post');
 
-      if (initialPostId && window.blogPosts) {
-        const post = window.blogPosts.find(p => p.id === initialPostId);
+      console.log('Initial post ID from URL:', initialPostId);
+      console.log('Posts list data available:', !!window.postsListData);
+
+      if (initialPostId && window.postsListData) {
+        const post = window.postsListData.find(p => p.id === initialPostId);
         if (post) {
+          console.log('Loading initial post:', initialPostId);
           this.loadPost(initialPostId);
         }
       }
+
+      // 确保全局可访问，用于调试
+      window.blogContentManager = this;
+
+      // 添加测试方法
+      window.testPostLoad = (postId) => {
+        console.log('Testing post load for:', postId);
+        this.loadPost(postId);
+      };
+
+      // 添加事件监听器测试
+      window.testEvent = (postId) => {
+        console.log('Testing event dispatch for:', postId);
+        window.dispatchEvent(new CustomEvent('postChanged', {
+          detail: { postId }
+        }));
+      };
     }
 
     showLoading() {
@@ -396,6 +443,8 @@ const calculateReadingTime = (content: string) => {
     }
 
     async loadPost(postId) {
+      console.log('loadPost called with:', postId);
+
       if (!window.postsListData) {
         console.error('Posts list data not available');
         return;
@@ -408,26 +457,40 @@ const calculateReadingTime = (content: string) => {
         return;
       }
 
+      console.log('Post exists in list, starting to load...');
       this.showLoading();
 
       try {
         // 从API获取文章详细内容
+        console.log('Fetching from API:', `/api/posts/${postId}.json`);
         const response = await fetch(`/api/posts/${postId}.json`);
+
+        console.log('API response status:', response.status);
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const post = await response.json();
+        console.log('Post data received:', post);
 
         const article = document.querySelector('.post');
-        if (!article) return;
+        if (!article) {
+          console.error('Article element not found');
+          return;
+        }
+
+        console.log('Updating article content...');
 
         // 更新文章内容
         article.setAttribute('data-post-id', post.id);
 
         // 更新标题
         const title = article.querySelector('.post-title');
-        if (title) title.textContent = post.title;
+        if (title) {
+          console.log('Updating title to:', post.title);
+          title.textContent = post.title;
+        }
 
         // 更新日期
         const time = article.querySelector('time');
@@ -467,10 +530,12 @@ const calculateReadingTime = (content: string) => {
         // 更新文章内容
         const contentDiv = article.querySelector('.post-content');
         if (contentDiv) {
+          console.log('Updating content div with markdown...');
           contentDiv.innerHTML = this.renderMarkdownContent(post.body);
         }
 
         this.currentPostId = postId;
+        console.log('Post loaded successfully:', postId);
 
       } catch (error) {
         console.error('Error loading post:', error);
@@ -480,7 +545,7 @@ const calculateReadingTime = (content: string) => {
           article.innerHTML = `
             <div class="error-message">
               <h2>加载失败</h2>
-              <p>无法加载文章内容，请稍后重试。</p>
+              <p>无法加载文章内容，请稍后重试。错误：${error.message}</p>
             </div>
           `;
         }
@@ -493,40 +558,65 @@ const calculateReadingTime = (content: string) => {
       // 改进的Markdown渲染器
       let html = markdown;
 
-      // 处理代码块
+      // 处理代码块（三个反引号）
       html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
-        return `<pre><code class="language-${lang || 'text'}">${this.escapeHtml(code.trim())}</code></pre>`;
+        const escapedCode = this.escapeHtml(code.trim());
+        return `<pre><code class="language-${lang || 'text'}">${escapedCode}</code></pre>`;
       });
 
-      // 处理行内代码
-      html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+      // 处理行内代码（单个反引号）
+      html = html.replace(/`([^`\n]+)`/g, '<code>$1</code>');
 
       // 处理标题
+      html = html.replace(/^#### (.*$)/gim, '<h4>$1</h4>');
       html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
       html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
       html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
 
       // 处理粗体和斜体
       html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-      html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+      html = html.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<em>$1</em>');
 
       // 处理链接
       html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
 
-      // 处理列表
-      html = html.replace(/^\* (.+)$/gim, '<li>$1</li>');
-      html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+      // 处理无序列表
+      html = html.replace(/^[\s]*[-*+] (.+)$/gim, '<li>$1</li>');
 
-      // 处理段落
-      html = html.split('\n\n').map(paragraph => {
+      // 处理有序列表
+      html = html.replace(/^[\s]*\d+\. (.+)$/gim, '<li>$1</li>');
+
+      // 包装连续的列表项
+      html = html.replace(/(<li>.*?<\/li>)(\s*<li>.*?<\/li>)*/gs, (match) => {
+        return `<ul>${match}</ul>`;
+      });
+
+      // 处理引用块
+      html = html.replace(/^> (.+)$/gim, '<blockquote>$1</blockquote>');
+
+      // 处理水平分割线
+      html = html.replace(/^---$/gim, '<hr>');
+
+      // 处理段落 - 分割双换行，但保留代码块和其他块级元素
+      const paragraphs = html.split(/\n\s*\n/);
+      html = paragraphs.map(paragraph => {
         paragraph = paragraph.trim();
         if (!paragraph) return '';
-        if (paragraph.startsWith('<h') || paragraph.startsWith('<pre') ||
-            paragraph.startsWith('<ul') || paragraph.startsWith('<ol')) {
+
+        // 跳过已经是块级元素的内容
+        if (paragraph.startsWith('<h') ||
+            paragraph.startsWith('<pre') ||
+            paragraph.startsWith('<ul') ||
+            paragraph.startsWith('<ol') ||
+            paragraph.startsWith('<blockquote') ||
+            paragraph.startsWith('<hr') ||
+            paragraph.includes('<li>')) {
           return paragraph;
         }
+
+        // 将其他内容包装为段落
         return `<p>${paragraph}</p>`;
-      }).join('\n');
+      }).join('\n\n');
 
       return html;
     }
@@ -539,7 +629,28 @@ const calculateReadingTime = (content: string) => {
   }
 
   // 初始化内容管理器
-  document.addEventListener('DOMContentLoaded', () => {
+  function initBlogContentManager() {
+    console.log('Initializing BlogContentManager...');
+    if (window.blogContentManager) {
+      console.log('BlogContentManager already exists');
+      return;
+    }
+
+    // 确保DOM元素存在
+    const article = document.querySelector('.post');
+    if (!article) {
+      console.log('Article element not found, retrying...');
+      setTimeout(initBlogContentManager, 100);
+      return;
+    }
+
     new BlogContentManager();
-  });
+  }
+
+  // 简化初始化
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initBlogContentManager);
+  } else {
+    initBlogContentManager();
+  }
 </script>

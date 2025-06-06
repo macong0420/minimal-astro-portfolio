@@ -275,3 +275,103 @@ html[data-theme="dark"] .post-link.active {
   background-color: #26a69a !important;
   color: #ffffff !important;
 }
+
+/* 强制修复代码块文字颜色 */
+pre {
+  background-color: #1d1f21 !important;
+  color: #e0e0e0 !important;
+  border-radius: 0.5rem !important;
+  padding: 1.25rem !important;
+  margin: 1.5rem 0 !important;
+  overflow-x: auto !important;
+  font-size: 0.95em !important;
+  line-height: 1.5 !important;
+}
+
+pre code {
+  color: #e0e0e0 !important;
+  background-color: transparent !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+}
+
+code {
+  font-family: 'Roboto Mono', monospace !important;
+  font-size: 0.95em !important;
+  color: #e0e0e0 !important;
+}
+
+/* 行内代码样式修复 */
+:not(pre) > code {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+  color: #333333 !important;
+  padding: 0.2em 0.4em !important;
+  border-radius: 0.25rem !important;
+  font-size: 0.9em !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-theme="dark"] :not(pre) > code {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+/* 确保代码块在所有情况下都有正确的颜色 */
+.post-content pre,
+.blog-content pre,
+article pre {
+  background-color: #1d1f21 !important;
+  color: #e0e0e0 !important;
+}
+
+.post-content pre code,
+.blog-content pre code,
+article pre code {
+  color: #e0e0e0 !important;
+}
+
+.post-content code,
+.blog-content code,
+article code {
+  color: #e0e0e0 !important;
+}
+
+/* 语法高亮颜色修复 */
+.token.keyword {
+  color: #c586c0 !important;
+}
+
+.token.function {
+  color: #dcdcaa !important;
+}
+
+.token.string {
+  color: #ce9178 !important;
+}
+
+.token.comment {
+  color: #6a9955 !important;
+  font-style: italic !important;
+}
+
+.token.variable {
+  color: #9cdcfe !important;
+}
+
+.token.property,
+.token.tag,
+.token.boolean,
+.token.number,
+.token.constant,
+.token.symbol {
+  color: #f92672 !important;
+}
+
+.token.operator {
+  color: #f8f8f2 !important;
+}
+
+.token.punctuation {
+  color: #88846f !important;
+}

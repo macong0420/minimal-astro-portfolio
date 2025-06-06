@@ -210,7 +210,8 @@ const defaultSlug = sortedPosts[0]?.id;
 
 <script>
   // 简化的客户端路由处理
-  document.addEventListener('DOMContentLoaded', () => {
+  function initBlogSidebar() {
+    console.log('Initializing BlogSidebar...');
     const postLinks = document.querySelectorAll('.post-link');
 
     // 从URL获取初始文章ID并设置活跃状态
@@ -232,6 +233,8 @@ const defaultSlug = sortedPosts[0]?.id;
         e.preventDefault();
         const postId = link.getAttribute('data-post-id');
 
+        console.log('BlogSidebar: Clicked post link:', postId);
+
         // 更新URL参数
         const url = new URL(window.location);
         url.searchParams.set('post', postId);
@@ -240,6 +243,8 @@ const defaultSlug = sortedPosts[0]?.id;
         // 更新活跃状态
         postLinks.forEach(l => l.classList.remove('active'));
         link.classList.add('active');
+
+        console.log('BlogSidebar: Dispatching postChanged event for:', postId);
 
         // 触发自定义事件通知主内容区域更新
         window.dispatchEvent(new CustomEvent('postChanged', {
@@ -269,5 +274,16 @@ const defaultSlug = sortedPosts[0]?.id;
         }));
       }
     });
-  });
+  }
+
+  // 多种初始化方式确保可靠性
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initBlogSidebar);
+  } else {
+    // DOM已经加载完成
+    initBlogSidebar();
+  }
+
+  // 额外的延迟初始化
+  setTimeout(initBlogSidebar, 50);
 </script>
