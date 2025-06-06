@@ -85,6 +85,104 @@ const { title, description, image = "/default-og-image.jpg", canonicalURL = Astr
       });
     </script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+
+    <!-- 强制修复代码块颜色 - 覆盖Prism.js样式 -->
+    <style>
+      /* 超强力修复 - 覆盖所有可能的代码块样式 */
+      pre[class*="language-"],
+      pre,
+      code[class*="language-"],
+      code {
+        color: #e0e0e0 !important;
+        background: #1d1f21 !important;
+        text-shadow: none !important;
+      }
+
+      pre[class*="language-"] {
+        background: #1d1f21 !important;
+        border: none !important;
+        border-radius: 0.5rem !important;
+        padding: 1.25rem !important;
+        margin: 1.5rem 0 !important;
+        overflow-x: auto !important;
+      }
+
+      code[class*="language-"] {
+        background: transparent !important;
+        color: #e0e0e0 !important;
+      }
+
+      /* 覆盖所有可能的token样式 */
+      .token.comment,
+      .token.prolog,
+      .token.doctype,
+      .token.cdata {
+        color: #6a9955 !important;
+      }
+
+      .token.punctuation {
+        color: #88846f !important;
+      }
+
+      .token.property,
+      .token.tag,
+      .token.boolean,
+      .token.number,
+      .token.constant,
+      .token.symbol,
+      .token.deleted {
+        color: #f92672 !important;
+      }
+
+      .token.selector,
+      .token.attr-name,
+      .token.string,
+      .token.char,
+      .token.builtin,
+      .token.inserted {
+        color: #ce9178 !important;
+      }
+
+      .token.operator,
+      .token.entity,
+      .token.url,
+      .language-css .token.string,
+      .style .token.string {
+        color: #f8f8f2 !important;
+      }
+
+      .token.atrule,
+      .token.attr-value,
+      .token.keyword {
+        color: #c586c0 !important;
+      }
+
+      .token.function,
+      .token.class-name {
+        color: #dcdcaa !important;
+      }
+
+      .token.regex,
+      .token.important,
+      .token.variable {
+        color: #9cdcfe !important;
+      }
+
+      /* 行内代码样式 */
+      :not(pre) > code {
+        background-color: rgba(0, 0, 0, 0.05) !important;
+        color: #333 !important;
+        padding: 0.2em 0.4em !important;
+        border-radius: 0.25rem !important;
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+      }
+
+      [data-theme="dark"] :not(pre) > code {
+        background-color: rgba(255, 255, 255, 0.1) !important;
+        color: #fff !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+      }
+    </style>
   </head>
   <body>
     <div class="top-glow" transition:persist></div>

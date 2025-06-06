@@ -276,8 +276,17 @@ html[data-theme="dark"] .post-link.active {
   color: #ffffff !important;
 }
 
-/* 强制修复代码块文字颜色 */
-pre {
+/* 超强力修复代码块文字颜色 - 覆盖所有可能的选择器 */
+pre,
+.post-content pre,
+.blog-content pre,
+article pre,
+div pre,
+section pre,
+main pre,
+.content pre,
+[class*="content"] pre,
+[class*="post"] pre {
   background-color: #1d1f21 !important;
   color: #e0e0e0 !important;
   border-radius: 0.5rem !important;
@@ -288,16 +297,48 @@ pre {
   line-height: 1.5 !important;
 }
 
-pre code {
+pre code,
+.post-content pre code,
+.blog-content pre code,
+article pre code,
+div pre code,
+section pre code,
+main pre code,
+.content pre code,
+[class*="content"] pre code,
+[class*="post"] pre code {
   color: #e0e0e0 !important;
   background-color: transparent !important;
   padding: 0 !important;
   border-radius: 0 !important;
+  font-family: 'Roboto Mono', monospace !important;
 }
 
-code {
+code,
+.post-content code,
+.blog-content code,
+article code,
+div code,
+section code,
+main code,
+.content code,
+[class*="content"] code,
+[class*="post"] code {
   font-family: 'Roboto Mono', monospace !important;
   font-size: 0.95em !important;
+}
+
+/* 特别针对代码块内的所有文本 */
+pre *,
+.post-content pre *,
+.blog-content pre *,
+article pre *,
+div pre *,
+section pre *,
+main pre *,
+.content pre *,
+[class*="content"] pre *,
+[class*="post"] pre * {
   color: #e0e0e0 !important;
 }
 
