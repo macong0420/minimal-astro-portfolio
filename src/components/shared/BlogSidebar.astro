@@ -128,21 +128,47 @@ const defaultSlug = sortedPosts[0]?.id;
   }
 
   .post-link:hover {
-    background-color: var(--hover-bg);
-    color: var(--text-color);
-    border-left-color: var(--primary-color);
+    background-color: var(--hover-bg, rgba(0, 121, 107, 0.1));
+    color: var(--text-color, #333333);
+    border-left-color: var(--primary-color, #00796b);
+  }
+
+  /* 确保悬停效果在所有环境下都能正常显示 */
+  [data-theme="light"] .post-link:hover {
+    background-color: rgba(0, 121, 107, 0.1);
+    color: #333333;
+    border-left-color: #00796b;
+  }
+
+  [data-theme="dark"] .post-link:hover {
+    background-color: rgba(38, 166, 154, 0.2);
+    color: #ffffff;
+    border-left-color: #26a69a;
   }
 
   .post-link.active {
-    background-color: var(--primary-color);
-    color: white;
-    border-left-color: var(--primary-color);
+    background-color: var(--primary-color, #00796b) !important;
+    color: white !important;
+    border-left-color: var(--primary-color, #00796b) !important;
     font-weight: 500;
   }
 
   .post-link.active:hover {
-    background-color: var(--primary-color);
-    color: white;
+    background-color: var(--primary-color, #00796b) !important;
+    color: white !important;
+  }
+
+  /* 为了确保在所有环境下都能正常显示，添加具体的颜色值 */
+  [data-theme="light"] .post-link.active {
+    background-color: #00796b !important;
+    color: #ffffff !important;
+    border-left-color: #00796b !important;
+  }
+
+  [data-theme="dark"] .post-link.active {
+    background-color: #26a69a !important;
+    color: #ffffff !important;
+    border-left-color: #26a69a !important;
   }
 
   /* 响应式设计 */

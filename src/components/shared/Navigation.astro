@@ -46,23 +46,23 @@ const isActive = (path: string) => {
   }
 
   .nav-links a {
-    color: var(--text-muted);
+    color: var(--text-muted, #666666);
     text-decoration: none;
-    font-size: var(--text-base);
+    font-size: var(--text-base, 1rem);
     font-weight: 500;
     padding: 0.5rem 0.75rem;
-    border-radius: var(--radius-md);
-    transition: all var(--transition-base);
+    border-radius: var(--radius-md, 0.375rem);
+    transition: all var(--transition-base, 0.2s ease);
     position: relative;
   }
 
   a:hover {
-    color: var(--text-color);
-    background-color: var(--hover-bg);
+    color: var(--text-color, #333333);
+    background-color: var(--hover-bg, rgba(0, 121, 107, 0.1));
   }
 
   a.active {
-    color: var(--primary-color);
+    color: var(--primary-color, #00796b);
     font-weight: 600;
   }
 
@@ -73,11 +73,46 @@ const isActive = (path: string) => {
     left: 0.75rem;
     right: 0.75rem;
     height: 2px;
-    background: var(--primary-gradient);
+    background: var(--primary-gradient, linear-gradient(135deg, #00796b, #26a69a));
     border-radius: 2px;
     transform-origin: center;
     transform: scaleX(0.8);
     transition: transform 0.2s ease;
+  }
+
+  /* 为不同主题提供明确的颜色值 */
+  [data-theme="light"] .nav-links a {
+    color: #666666;
+  }
+
+  [data-theme="light"] a:hover {
+    color: #333333;
+    background-color: rgba(0, 121, 107, 0.1);
+  }
+
+  [data-theme="light"] a.active {
+    color: #00796b;
+  }
+
+  [data-theme="light"] a.active::after {
+    background: linear-gradient(135deg, #00796b, #26a69a);
+  }
+
+  [data-theme="dark"] .nav-links a {
+    color: #cccccc;
+  }
+
+  [data-theme="dark"] a:hover {
+    color: #ffffff;
+    background-color: rgba(38, 166, 154, 0.2);
+  }
+
+  [data-theme="dark"] a.active {
+    color: #26a69a;
+  }
+
+  [data-theme="dark"] a.active::after {
+    background: linear-gradient(135deg, #26a69a, #4db6ac);
   }
 
   a.active:hover::after {
