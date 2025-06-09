@@ -33,7 +33,7 @@ This will:  这样就：
     下载安装脚本
 2. Make it executable  把它设成可执行的
 3. Create a new `augment-vip` directory in your current location  
-    在你当前位置新建一个 `augment-vip` 目录
+    在你当前位置新建一个 **augment-vip** 目录
 4. Run the installation, which will download additional required scripts  
     运行安装，它会帮你下载其他需要的脚本
 5. Prompt you if you want to run the database cleaning and telemetry ID modification scripts  
