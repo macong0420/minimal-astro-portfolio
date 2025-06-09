@@ -11,38 +11,50 @@ const isActive = (path: string) => {
 
 <nav>
   <div class="nav-container">
-    <div class="nav-links">
-      {
-        NAVIGATION.map(({ name, path }) => (
-          <a href={path} class={isActive(path) ? "active" : ""}>
-            {name}
-          </a>
-        ))
-      }
+    <div class="nav-content">
+      <div class="nav-links">
+        {
+          NAVIGATION.map(({ name, path }) => (
+            <a href={path} class={isActive(path) ? "active" : ""}>
+              {name}
+            </a>
+          ))
+        }
+      </div>
+      <div class="theme-toggle-container">
+        <ThemeToggle />
+      </div>
     </div>
-    <ThemeToggle />
   </div>
 </nav>
 
 <style>
   nav {
-    padding: 1.5rem 1rem;
+    padding: 1.5rem 0;
+    width: 100%;
   }
 
   .nav-container {
-    display: flex;
     width: 100%;
+    padding: 0 1.5rem;
+  }
+
+  .nav-content {
+    display: flex;
     max-width: 1200px;
     margin: 0 auto;
-    justify-content: flex-start;
+    justify-content: space-between;
     align-items: center;
-    gap: 2rem;
+    width: 100%;
   }
 
   .nav-links {
     display: flex;
     gap: 1.5rem;
-    flex: 1;
+  }
+
+  .theme-toggle-container {
+    margin-left: auto;
   }
 
   .nav-links a {
@@ -84,9 +96,30 @@ const isActive = (path: string) => {
     transform: scaleX(1);
   }
 
+  /* 响应式样式，与内容区域保持一致 */
+  @media (min-width: 768px) {
+    .nav-container {
+      padding: 0 10%;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .nav-container {
+      padding: 0 15%;
+    }
+  }
+  
+  @media (min-width: 1920px) {
+    .nav-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+  }
+
   @media (max-width: 640px) {
     nav {
-      padding: 1.5rem 1.5rem;
+      padding: 1.5rem 0;
     }
     
     .nav-links {

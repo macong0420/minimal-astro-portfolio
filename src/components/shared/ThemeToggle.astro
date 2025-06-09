@@ -80,11 +80,14 @@
     });
   }
 
-  // 页面加载时初始化
-  document.addEventListener('DOMContentLoaded', setupThemeToggle);
-  
-  // 处理Astro视图转换
-  document.addEventListener('astro:page-load', setupThemeToggle);
+  // 立即执行函数，确保在脚本加载后立即设置主题切换功能
+  (function() {
+    setupThemeToggle();
+    
+    // 同时保留原有的事件监听，以确保在页面加载和视图转换时都能正确初始化
+    document.addEventListener('DOMContentLoaded', setupThemeToggle);
+    document.addEventListener('astro:page-load', setupThemeToggle);
+  })();
   
   // 确保在视图转换前保存当前主题
   document.addEventListener('astro:before-swap', () => {
