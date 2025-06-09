@@ -1,0 +1,45 @@
+---
+interface Props {
+  src: string;
+  title?: string;
+  width?: string;
+  height?: string;
+}
+
+const { src, title = "PDF文档", width = "100%", height = "500px" } = Astro.props;
+
+// 确定PDF的路径
+// 如果src以http://或https://开头，则使用完整URL
+// 否则假设它是相对于public目录的路径
+const pdfSrc = src.startsWith('http://') || src.startsWith('https://') 
+  ? src 
+  : `/${src}`;
+---
+
+<div class="pdf-container">
+  <iframe
+    src={pdfSrc}
+    title={title}
+    width={width}
+    height={height}
+    loading="lazy"
+    class="pdf-iframe"
+  >
+    <p>您的浏览器不支持iframe。您可以<a href={pdfSrc}>下载PDF</a>查看。</p>
+  </iframe>
+</div>
+
+<style>
+  .pdf-container {
+    width: 100%;
+    margin: 1.5rem 0;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+  
+  .pdf-iframe {
+    border: none;
+    display: block;
+  }
+</style>
