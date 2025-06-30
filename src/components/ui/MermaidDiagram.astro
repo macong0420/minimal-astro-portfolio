@@ -1,0 +1,62 @@
+---
+interface Props {
+  chart: string;
+  id?: string;
+}
+
+const { chart, id = `mermaid-${Math.random().toString(36).substring(2, 11)}` } = Astro.props;
+---
+
+<div class="mermaid-wrapper">
+  <div class="mermaid" id={id}>
+    {chart}
+  </div>
+</div>
+
+<script>
+  import mermaid from 'mermaid';
+
+  // 初始化配置
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default',
+    securityLevel: 'loose',
+    fontFamily: 'Inter, sans-serif',
+  });
+
+  // 监听主题变化并重新渲染图表
+  const observer = new MutationObserver(() => {
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default';
+    mermaid.initialize({ theme });
+    mermaid.run();
+  });
+
+  // 监听html元素的data-theme属性变化
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-theme']
+  });
+
+  // 页面转换后重新渲染
+  document.addEventListener('astro:page-load', () => {
+    mermaid.run();
+  });
+</script>
+
+<style>
+  .mermaid-wrapper {
+    display: flex;
+    justify-content: center;
+    margin: 2rem 0;
+    overflow-x: auto;
+    padding: 1rem;
+    background-color: var(--surface-color);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+  }
+  
+  /* 确保SVG图表在暗模式下有正确的文本颜色 */
+  :global([data-theme="dark"]) .mermaid-wrapper svg {
+    filter: invert(0.85);
+  }
+</style> 

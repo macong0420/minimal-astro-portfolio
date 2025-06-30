@@ -1,0 +1,58 @@
+/* Mermaid 图表样式 */
+.mermaid-wrapper {
+  display: flex;
+  justify-content: center;
+  margin: 2rem 0;
+  overflow-x: auto;
+  padding: 1.5rem;
+  background-color: var(--surface-color);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+/* 确保在黑暗主题下图表可见 */
+[data-theme="dark"] .mermaid-wrapper svg {
+  filter: brightness(1.5) contrast(0.8);
+}
+
+/* 错误信息样式 */
+.mermaid-wrapper .error {
+  color: #e53e3e;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  margin: 0;
+  padding: 1rem;
+  background-color: rgba(229, 62, 62, 0.1);
+  border-radius: var(--radius-md);
+}
+
+/* 确保图表居中显示 */
+.mermaid {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+/* 图表文本样式 */
+.mermaid svg {
+  font-family: var(--font-primary) !important;
+}
+
+/* 图表内部文本颜色 */
+.mermaid .label {
+  color: var(--text-color) !important;
+}
+
+/* 确保图表最大宽度 */
+.mermaid svg {
+  max-width: 100%;
+}
+
+/* 响应式调整 */
+@media (max-width: 640px) {
+  .mermaid-wrapper {
+    padding: 1rem;
+    margin: 1.5rem 0;
+  }
+} 

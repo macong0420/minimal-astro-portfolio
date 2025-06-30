@@ -103,8 +103,53 @@ const { title, description, image = "/default-og-image.jpg", canonicalURL = Astr
     <script is:inline src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-jsx.min.js"></script>
     <script is:inline src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-tsx.min.js"></script>
     <script is:inline src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-css.min.js"></script>
-    <script is:inline src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-yaml.min.js"></script>
-  </body>
+      <script is:inline src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-yaml.min.js"></script>
+  
+  <!-- Mermaid 初始化脚本 -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof mermaid !== 'undefined') {
+        mermaid.initialize({
+          startOnLoad: true,
+          theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default',
+          securityLevel: 'loose',
+          fontFamily: 'Inter, sans-serif',
+        });
+      }
+    });
+
+    // 处理主题变化
+    const observer = new MutationObserver(() => {
+      if (typeof mermaid !== 'undefined') {
+        const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default';
+        mermaid.initialize({ theme });
+        try {
+          mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+        } catch (e) {
+          console.error('Mermaid 渲染错误:', e);
+        }
+      }
+    });
+    
+    // 监听html元素的data-theme属性变化
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme']
+    });
+
+    // 页面转换后重新渲染
+    document.addEventListener('astro:page-load', () => {
+      if (typeof mermaid !== 'undefined') {
+        try {
+          mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+        } catch (e) {
+          console.error('Mermaid 页面加载错误:', e);
+        }
+      }
+    });
+  </script>
+</body>
 </html>
 
 <style>

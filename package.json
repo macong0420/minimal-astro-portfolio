@@ -12,10 +12,13 @@
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.1.0",
+    "@astrojs/vercel": "^8.2.0",
     "@fontsource/inter": "^5.1.1",
     "@fontsource/roboto-mono": "^5.1.1",
     "@fontsource/source-sans-pro": "^5.1.0",
-    "astro": "^5.1.2"
+    "astro": "^5.1.2",
+    "mermaid": "^11.7.0",
+    "unist-util-visit": "^5.0.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241230.0",
