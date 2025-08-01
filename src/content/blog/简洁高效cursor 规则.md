@@ -60,5 +60,3 @@ lib/ConstructionSite/
 6. 每个文件的代码行数尽量不要超过 600 行.
 
 
-
-

@@ -12,7 +12,7 @@ Isometric 3D animation, low-poly aesthetic, charming, whimsical, claymation styl
 Elements assemble piece by piece, pop-up book style, satisfying clicks and thuds as objects appear.
 Clean, bright lighting, slightly desaturated or pastel color palette.
 Smooth, delightful stop-motion feel to the assembly of objects.
-Subtle watermark '@tuziapi ' in the bottom right corner.
+Subtle watermark '@深度放空 ' in the bottom right corner.
 
 Final frame: aerial view of a modern [主要场景名称].
 AI should automatically interpret typical buildings, facilities, or features that belong to the [主要场景名称].
