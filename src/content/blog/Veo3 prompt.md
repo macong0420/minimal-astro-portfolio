@@ -32,3 +32,44 @@ Keywords : 16:9, one take, no cuts, dynamic assembly, photorealistic, cat, cute,
 
 prompt 一个大的纸箱子上面标着顺丰快递的logo 在一间空的装修好的屋子里自己瞬间打开 填充了家里所有的家居和装饰 像个新家的样子 一镜到底  广告片的风格 最后一还冲进来一条边牧高兴地趴在地上
 
+
+## 树叶旋转 组成文字
+
+```json
+{"sequences":[ { "start_sec":0, "end_sec":3, "narrative":"Wind gusts,whirl '深度放空' in leaves.", "visuals":{ "camera_setup":"Cinematic,55mm,f/1.7", "motion":"Whirl spin", "lighting":"Autumn golden rays", "effects":["Leaf twirls","Gust trails"] }, "environment":{ "setting":"Windy forest glade", "atmosphere":"Rustle leaves,branch sways", "props":["Fallen logs"] }, "entities":[ { "type":"text", "details":"'深度放空' leafy font,brown-green", "behaviors":["Gathers debris","Spins vortex"], "interactions":"Leaves circle" } ], "audio_layers":{ "background":"Wind howl -10dB", "dialogue":[], "effects":["Leaf rustles"] } }, { "start_sec":3, "end_sec":5, "narrative":"Letters settle,flutter with breeze.", "visuals":{ "camera_setup":"Cinematic,55mm,f/1.7", "motion":"Settle down", "lighting":"Soft dappled shade", "effects":["Flutter settle","Dust motes"] }, "environment":{ "setting":"Windy forest glade", "atmosphere":"Rustle leaves,branch sways", "props":["Fallen logs"] }, "entities":[ { "type":"text", "details":"'深度放空' leafy font,brown-green", "behaviors":["Lands firm","Quivers lightly"], "interactions":"Breeze scatters" }}
+```
+
+## 岩浆效果
+
+```json
+{"sequences":[ { "start_sec":0, "end_sec":3, "narrative":"Lava flows,mold 'VEO3' in magma.", "visuals":{ "camera_setup":"Cinematic,35mm,f/2.8", "motion":"Flow track", "lighting":"Molten red orange", "effects":["Lava bubbles","Heat distort"] }, "environment":{ "setting":"Active volcano crater", "atmosphere":"Ash clouds,rumble quakes", "props":["Rock fissures"] }, "entities":[ { "type":"text", "details":"'VEO3' molten font,red-yellow", "behaviors":["Melts shape","Bubbles surface"], "interactions":"Lava drips" } ], "audio_layers":{ "background":"Rumble lava -10dB", "dialogue":[], "effects":["Bubble bursts"] } }, { "start_sec":3, "end_sec":5, "narrative":"Letters harden,crack with glow.", "visuals":{ "camera_setup":"Cinematic,35mm,f/2.8", "motion":"Cool zoom", "lighting":"Cooling ember fade", "effects":["Crack lines","Smoke wisps"] }, "environment":{ "setting":"Active volcano crater", "atmosphere":"Ash clouds,rumble quakes", "props":["Rock fissures"] }, "entities":[ { "type":"text", "details":"'VEO3' molten font,red-yellow", "behaviors":["Solidifies firm","Pulses heat"], "interactions":"Smoke rises" }}
+
+```
+
+## 威廉古堡风格
+```json
+{"sequences":[ { "start_sec":0, "end_sec":3, "narrative":"Shadows creep,outline 'VEO3' in dark.", "visuals":{ "camera_setup":"Cinematic,50mm,f/1.8", "motion":"Creep in", "lighting":"Low key moonlight", "effects":["Shadow tendrils","Eerie fade"] }, "environment":{ "setting":"Haunted gothic hall", "atmosphere":"Dust motes,echo whispers", "props":["Candle flickers"] }, "entities":[ { "type":"text", "details":"'VEO3' spooky font,black-purple", "behaviors":["Forms silhouettes","Twists menacing"], "interactions":"Shadows dance" } ], "audio_layers":{ "background":"Ominous drone -11dB", "dialogue":[], "effects":["Creak sounds"] } }, { "start_sec":3, "end_sec":5, "narrative":"Letters manifest,glow with phantom light.", "visuals":{ "camera_setup":"Cinematic,50mm,f/1.8", "motion":"Reveal spin", "lighting":"Ghostly inner shine", "effects":["Phantom auras","Subtle dissipate"] }, "environment":{ "setting":"Haunted gothic hall", "atmosphere":"Dust motes,echo whispers", "props":["Candle flickers"] }, "entities":[ { "type":"text", "details":"'VEO3' spooky font,black-purple", "behaviors":["Solidifies eerie","Pulses haunt"], "interactions":"Light casts shadows" }}
+```
+
+## 赛博朋克 霓虹灯
+```json
+{"sequences":[ { "start_sec":0, "end_sec":3, "narrative":"Neon lights flicker,trace 'VEO3' in glow.", "visuals":{ "camera_setup":"Cinematic,28mm,f/2.0", "motion":"Pulse zoom", "lighting":"Vibrant cyber hues", "effects":["Glow pulses","Circuit traces"] }, "environment":{ "setting":"Futuristic city night", "atmosphere":"Rain slick,holo ads", "props":["Towering billboards"] }, "entities":[ { "type":"text", "details":"'VEO3' cyber font,pink-blue", "behaviors":["Ignites lines","Flickers sync"], "interactions":"Neon reflects" } ], "audio_layers":{ "background":"Synth wave -10dB", "dialogue":[], "effects":["Electric hums"] } }, { "start_sec":3, "end_sec":5, "narrative":"Letters surge,explode with sparks.", "visuals":{ "camera_setup":"Cinematic,28mm,f/2.0", "motion":"Energy burst", "lighting":"Intense flare bursts", "effects":["Spark showers","Halo effects"] }, "environment":{ "setting":"Futuristic city night", "atmosphere":"Rain slick,holo ads", "props":["Towering billboards"] }, "entities":[ { "type":"text", "details":"'VEO3' cyber font,pink-blue", "behaviors":["Expands bright","Crackles power"], "interactions":"Sparks rain" }}
+```
+
+## 烟雾效果
+
+```json
+{"sequences":[ { "start_sec":0, "end_sec":3, "narrative":"Smoke curls,forge 'VEO3' in haze.", "visuals":{ "camera_setup":"Cinematic,45mm,f/2.1", "motion":"Swirl in", "lighting":"Dim ember underlight", "effects":["Smoke tendrils","Dissipate slow"] }, "environment":{ "setting":"Mystic ritual chamber", "atmosphere":"Incense wafts,shadow plays", "props":["Altar stones"] }, "entities":[ { "type":"text", "details":"'VEO3' smoky font,grey-red", "behaviors":["Coils form","Wafts ethereal"], "interactions":"Smoke envelops" } ], "audio_layers":{ "background":"Low chant -11dB", "dialogue":[], "effects":["Whisper winds"] } }, { "start_sec":3, "end_sec":5, "narrative":"Letters clear,glow with embers.", "visuals":{ "camera_setup":"Cinematic,45mm,f/2.1", "motion":"Reveal push", "lighting":"Inner fire pulse", "effects":["Ember floats","Heat shimmer"] }, "environment":{ "setting":"Mystic ritual chamber", "atmosphere":"Incense wafts,shadow plays", "props":["Altar stones"] }, "entities":[ { "type":"text", "details":"'VEO3' smoky font,grey-red", "behaviors":["Sharpens edges","Flares subtly"], "interactions":"Embers spark" }}
+```
+
+## 棱镜彩虹分裂
+
+```json
+{"sequences":[ { "start_sec":0, "end_sec":3, "narrative":"Crystals prism,split 'VEO3' in rainbows.", "visuals":{ "camera_setup":"Cinematic,90mm,f/1.5", "motion":"Refract turn", "lighting":"Spectrum color bursts", "effects":["Light rays","Prism flares"] }, "environment":{ "setting":"Crystal cavern glow", "atmosphere":"Echo drips,light dances", "props":["Gem clusters"] }, "entities":[ { "type":"text", "details":"'VEO3' prismatic font,multi-hue", "behaviors":["Splits beams","Shifts colors"], "interactions":"Rays bend" } ], "audio_layers":{ "background":"Harmonic chimes -9dB", "dialogue":[], "effects":["Crystal rings"] } }, { "start_sec":3, "end_sec":5, "narrative":"Letters unify,shine with spectrum.", "visuals":{ "camera_setup":"Cinematic,90mm,f/1.5", "motion":"Unite focus", "lighting":"Unified rainbow glow", "effects":["Color merge","Halo pulses"] }, "environment":{ "setting":"Crystal cavern glow", "atmosphere":"Echo drips,light dances", "props":["Gem clusters"] }, "entities":[ { "type":"text", "details":"'VEO3' prismatic font,multi-hue", "behaviors":["Combines vivid","Radiates bright"], "interactions":"Spectrum swirls" }}
+```
+
+## 北极冰雕
+
+```json
+{"sequences":[ { "start_sec":0, "end_sec":3, "narrative":"Ice freezes,sculpt 'VEO3' in frost.", "visuals":{ "camera_setup":"Cinematic,50mm,f/1.8", "motion":"Frost spread", "lighting":"Cool arctic blue", "effects":["Crystal growth","Freeze crackle"] }, "environment":{ "setting":"Frozen tundra plain", "atmosphere":"Blizzard flurries,snow drifts", "props":["Icy spikes"] }, "entities":[ { "type":"text", "details":"'VEO3' crystalline font,white-silver", "behaviors":["Forms layers","Glints light"], "interactions":"Frost expands" } ], "audio_layers":{ "background":"Wind chill -12dB", "dialogue":[], "effects":["Ice forms"] } }, { "start_sec":3, "end_sec":5, "narrative":"Letters solidify,shimmer with snow.", "visuals":{ "camera_setup":"Cinematic,50mm,f/1.8", "motion":"Pan glide", "lighting":"Reflective ice shine", "effects":["Snow dust","Subtle melt"] }, "environment":{ "setting":"Frozen tundra plain", "atmosphere":"Blizzard flurries,snow drifts", "props":["Icy spikes"] }, "entities":[ { "type":"text", "details":"'VEO3' crystalline font,white-silver", "behaviors":["Hardens firm","Sparks cold"], "interactions":"Snow settles" }}
+```
