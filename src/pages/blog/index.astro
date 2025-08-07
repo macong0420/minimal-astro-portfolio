@@ -6,6 +6,7 @@ import Container from "../../components/ui/Container.astro";
 import Section from "../../components/ui/Section.astro";
 import ContentList from "../../components/shared/ContentList.astro";
 import ArticleCard from "../../components/ui/ArticleCard.astro";
+import { extractFirstImageFromMarkdown } from "../../utils/content";
 
 // 获取所有文章并按日期排序
 const posts = await getCollection("blog", ({ data }: CollectionEntry<"blog">) => {
@@ -16,6 +17,15 @@ const sortedPosts = posts.sort(
   (a: CollectionEntry<"blog">, b: CollectionEntry<"blog">) =>
     b.data.publishedAt.getTime() - a.data.publishedAt.getTime()
 );
+
+// 为每篇文章提取缩略图
+const postsWithThumbnails = sortedPosts.map((post) => {
+  const thumbnail = extractFirstImageFromMarkdown(post.body);
+  return {
+    ...post,
+    thumbnail
+  };
+});
 ---
 
 <BaseLayout title="Blog | Mr.C" description="我的技术博客和思考">
@@ -24,13 +34,14 @@ const sortedPosts = posts.sort(
       <!-- 删除这里的红框内容，直接展示文章列表 -->
       <ContentList>
         {
-          sortedPosts.map((post) => (
+          postsWithThumbnails.map((post) => (
             <ArticleCard
               title={post.data.title}
               description={post.data.description}
               url={`/blog/${post.id}`}
               date={post.data.publishedAt}
               tags={post.data.tags}
+              thumbnail={post.thumbnail}
             />
           ))
         }

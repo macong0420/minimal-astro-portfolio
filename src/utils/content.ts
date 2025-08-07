@@ -17,4 +17,18 @@ export function filterDrafts(content: ContentItem[]): ContentItem[] {
         }
         return true;
     });
+}
+
+export function extractFirstImageFromMarkdown(markdown: string): string | null {
+    // 匹配 markdown 图片语法: ![alt](url) 或 ![alt](url "title")
+    const imageRegex = /!\[.*?\]\(([^)]+)\)/;
+    const match = markdown.match(imageRegex);
+    
+    if (match && match[1]) {
+        // 移除可能的标题部分 (如 "url title" 中的 title)
+        const url = match[1].split(' ')[0].replace(/["']/g, '');
+        return url;
+    }
+    
+    return null;
 } 
