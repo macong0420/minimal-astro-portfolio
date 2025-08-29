@@ -7,7 +7,11 @@
       "Bash(npm install:*)",
       "Bash(npm run build:*)",
       "WebFetch(domain:localhost)",
-      "WebFetch(domain:blog.yc0501.online)"
+      "WebFetch(domain:blog.yc0501.online)",
+      "WebFetch(domain:www.rssboard.org)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.w3.org)",
+      "Bash(curl:*)"
     ],
     "deny": []
   }
