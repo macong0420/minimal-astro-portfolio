@@ -17,17 +17,14 @@ export async function GET(context) {
     title: SITE.title,
     description: SITE.description,
     site: context.site || SITE.url,
-    items: await Promise.all(sortedPosts.map(async (post) => {
-      const { Content } = await post.render();
-      return {
-        title: post.data.title,
-        pubDate: post.data.publishedAt,
-        description: post.data.description,
-        content: await Content(),
-        link: `/blog/${post.id}/`,
-        categories: post.data.tags || [],
-        author: `${SITE.name} <noreply@blog.yc0501.online>`,
-      };
+    items: sortedPosts.map((post) => ({
+      title: post.data.title,
+      pubDate: post.data.publishedAt,
+      description: post.data.description,
+      content: post.body,
+      link: `/blog/${post.slug}/`,
+      categories: post.data.tags || [],
+      author: `${SITE.name} <noreply@blog.yc0501.online>`,
     })),
     customData: `<language>zh-cn</language>`,
   });
