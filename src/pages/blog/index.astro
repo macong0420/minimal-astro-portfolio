@@ -6,6 +6,7 @@ import Container from "../../components/ui/Container.astro";
 import Section from "../../components/ui/Section.astro";
 import ContentList from "../../components/shared/ContentList.astro";
 import ArticleCard from "../../components/ui/ArticleCard.astro";
+import RssIcon from "../../components/ui/RssIcon.astro";
 import { extractFirstImageFromMarkdown } from "../../utils/content";
 
 // 获取所有文章并按日期排序
@@ -31,7 +32,13 @@ const postsWithThumbnails = sortedPosts.map((post) => {
 <BaseLayout title="Blog | Mr.C" description="我的技术博客和思考">
   <Container>
     <Section>
-      <!-- 删除这里的红框内容，直接展示文章列表 -->
+      <div class="blog-header">
+        <h1>Blog</h1>
+        <a href="/rss.xml" class="rss-link" title="订阅 RSS">
+          <RssIcon size={18} />
+          <span>RSS</span>
+        </a>
+      </div>
       <ContentList>
         {
           postsWithThumbnails.map((post) => (
@@ -49,3 +56,58 @@ const postsWithThumbnails = sortedPosts.map((post) => {
     </Section>
   </Container>
 </BaseLayout>
+
+<style>
+  .blog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .blog-header h1 {
+    margin: 0;
+    font-size: var(--text-3xl);
+    font-weight: 400;
+    color: var(--text-color);
+  }
+
+  .rss-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-base);
+  }
+
+  .rss-link:hover {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    background-color: var(--hover-bg);
+    transform: translateY(-1px);
+  }
+
+  .rss-link svg {
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 640px) {
+    .blog-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    
+    .rss-link {
+      align-self: flex-end;
+    }
+  }
+</style>

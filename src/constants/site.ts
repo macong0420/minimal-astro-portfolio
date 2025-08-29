@@ -7,7 +7,7 @@ export const SITE = {
     name: "Mr.C",
     title: "客户端开发工程师 & 技术爱好者",
     description: "个人网站和博客",
-    url: "https://bytekai.dev",
+    url: "https://blog.yc0501.online",
     defaultImage: "/default-og-image.jpg",
 } as const;
 
