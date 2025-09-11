@@ -1,0 +1,132 @@
+---
+// 测试页面：验证PDF文件是否能正常访问
+---
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF 测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .pdf-container {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ccc;
+            margin: 10px 0;
+        }
+        .test-link {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        .test-link:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>PDF 文件测试页面</h1>
+    
+    <div class="test-section">
+        <h2>1. 直接链接测试</h2>
+        <p>点击下面的链接直接访问PDF文件：</p>
+        <a href="/pdfs/OKR.pdf" target="_blank" class="test-link">直接打开 PDF</a>
+    </div>
+
+    <div class="test-section">
+        <h2>2. iframe 嵌入测试</h2>
+        <p>使用iframe嵌入PDF（与博客中相同的方式）：</p>
+        <iframe 
+            src="/pdfs/OKR.pdf" 
+            title="PDF测试文档" 
+            width="100%" 
+            height="600px" 
+            class="pdf-container"
+            style="border:none; display:block;">
+            <p>您的浏览器不支持iframe。您可以<a href="/pdfs/OKR.pdf">下载PDF</a>查看。</p>
+        </iframe>
+    </div>
+
+    <div class="test-section">
+        <h2>3. object 标签测试</h2>
+        <p>使用object标签嵌入PDF：</p>
+        <object 
+            data="/pdfs/OKR.pdf" 
+            type="application/pdf" 
+            width="100%" 
+            height="600px"
+            class="pdf-container">
+            <p>无法显示PDF。<a href="/pdfs/OKR.pdf">点击这里下载</a></p>
+        </object>
+    </div>
+
+    <div class="test-section">
+        <h2>4. embed 标签测试</h2>
+        <p>使用embed标签嵌入PDF：</p>
+        <embed 
+            src="/pdfs/OKR.pdf" 
+            type="application/pdf" 
+            width="100%" 
+            height="600px"
+            class="pdf-container">
+    </div>
+
+    <div class="test-section">
+        <h2>调试信息</h2>
+        <p>当前页面URL: <span id="current-url"></span></p>
+        <p>PDF文件路径: /pdfs/OKR.pdf</p>
+        <p>完整PDF URL: <span id="pdf-url"></span></p>
+        
+        <button onclick="testPdfAccess()" class="test-link">测试PDF文件访问</button>
+        <div id="test-result"></div>
+    </div>
+
+    <script>
+        // 显示当前URL信息
+        document.getElementById('current-url').textContent = window.location.href;
+        document.getElementById('pdf-url').textContent = new URL('/pdfs/OKR.pdf', window.location.origin).href;
+
+        // 测试PDF文件访问
+        async function testPdfAccess() {
+            const resultDiv = document.getElementById('test-result');
+            resultDiv.innerHTML = '<p>正在测试...</p>';
+            
+            try {
+                const response = await fetch('/pdfs/OKR.pdf');
+                const contentType = response.headers.get('content-type');
+                const contentLength = response.headers.get('content-length');
+                
+                resultDiv.innerHTML = `
+                    <h4>测试结果:</h4>
+                    <p>状态码: ${response.status} ${response.statusText}</p>
+                    <p>Content-Type: ${contentType || '未设置'}</p>
+                    <p>Content-Length: ${contentLength || '未知'} bytes</p>
+                    <p>是否可访问: ${response.ok ? '✅ 是' : '❌ 否'}</p>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <h4>测试结果:</h4>
+                    <p>❌ 访问失败: ${error.message}</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
