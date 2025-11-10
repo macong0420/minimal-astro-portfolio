@@ -8,20 +8,15 @@ tags:
   - js
   - 前端
 ---
-
-  
+# 从 iOS 到 Web：React 基础概念指南
 
 > 写给 iOS 开发者的 React 入门教程
-
-  
 
 作为一名 iOS 开发者转向 Web 开发，你会发现很多概念有相似之处，但也有本质区别。本文将通过对比 iOS (Objective-C) 和 React 的方式，帮助你快速理解 React 的核心概念。
 
   
 
 ## 目录
-
-  
 
 - [一、Props：外部传入的数据](#一props外部传入的数据)
 
@@ -45,11 +40,7 @@ tags:
 
 ## 一、Props：外部传入的数据
 
-  
-
 ### 什么是 Props？
-
-  
 
 Props（properties 的缩写）是**父组件传递给子组件的数据**，类似于 iOS 中的初始化参数或依赖注入。
 
@@ -57,11 +48,7 @@ Props（properties 的缩写）是**父组件传递给子组件的数据**，类
 
 ### iOS vs React 对比
 
-  
-
 **iOS (Objective-C):**
-
-  
 
 ```objc
 
@@ -75,13 +62,9 @@ Props（properties 的缩写）是**父组件传递给子组件的数据**，类
 
 @property (nonatomic, copy) NSString *userName;
 
-  
-
 - (instancetype)initWithUserId:(NSString *)userId
 
 userName:(NSString *)userName;
-
-  
 
 @end
 
@@ -190,8 +173,6 @@ return (
   
 
 ### Props 的特点
-
-  
 
 **1. 只读性**：子组件不能修改 props
 
@@ -313,8 +294,6 @@ const { name, age, city } = this.props;
 
 ### Props 类型检查（可选）
 
-  
-
 虽然 JavaScript 不强制类型，但可以使用 PropTypes 进行运行时检查：
 
   
@@ -369,19 +348,13 @@ const { userId, userName, age, onUpdate } = this.props;
 
 ## 二、State：组件内部状态
 
-  
-
 ### 什么是 State？
-
-  
 
 State 是组件**自己管理的内部数据**，类似于 iOS 中的实例变量。
 
   
 
 ### iOS vs React 对比
-
-  
 
 **iOS (Objective-C):**
 
@@ -503,8 +476,6 @@ return (
 
 ### State 的定义方式
 
-  
-
 **方式 1：类字段语法（推荐）**
 
   
@@ -556,8 +527,6 @@ name: '张三'
   
 
 ### State 的修改规则
-
-  
 
 **❌ 错误方式：直接修改**
 
@@ -665,27 +634,18 @@ return (
 
 ## 三、Props vs State 对比
 
-  
-
 ### 核心区别
 
   
 
-| 特性 | Props | State |
+| 特性     | Props        | State            |
+| ------ | ------------ | ---------------- |
+| 数据来源   | 父组件传入        | 组件内部定义           |
+| 能否修改   | 只读           | 可修改（用 setState）  |
+| 定义位置   | 父组件 JSX      | 组件内 `state = {}` |
+| 用途     | 接收外部配置       | 管理组件状态           |
+| iOS 类比 | init 参数/依赖注入 | 实例变量             |
 
-| --- | --- | --- |
-
-| 数据来源 | 父组件传入 | 组件内部定义 |
-
-| 能否修改 | 只读 | 可修改（用 setState） |
-
-| 定义位置 | 父组件 JSX | 组件内 `state = {}` |
-
-| 用途 | 接收外部配置 | 管理组件状态 |
-
-| iOS 类比 | init 参数/依赖注入 | 实例变量 |
-
-  
   
 
 ### 完整示例
@@ -866,19 +826,13 @@ onClose={this.closePreview}
 
 ## 四、解构赋值：批量提取属性
 
-  
-
 ### 什么是解构赋值？
-
-  
 
 解构赋值是 ES6 的语法特性，用于从对象或数组中批量提取值。
 
   
 
 ### 基础语法
-
-  
 
 **对象解构**
 
@@ -979,8 +933,6 @@ console.log(third); // 3
   
 
 ### 解构赋值高级用法
-
-  
 
 **1. 默认值**
 
@@ -1212,15 +1164,9 @@ return (
 
 ## 五、组件方法与事件处理
 
-  
-
 ### 箭头函数 vs 普通函数
 
-  
-
 #### 为什么用箭头函数？
-
-  
 
 **问题**: 普通函数中的 `this` 容易丢失
 
@@ -1363,8 +1309,6 @@ NSLog(@"%@", self.view);
   
 
 ### 事件处理方法
-
-  
 
 **无参数事件**
 
@@ -1520,11 +1464,7 @@ return (
 
 ## 六、SSR 数据获取：getInitialProps
 
-  
-
 ### 什么是 getInitialProps？
-
-  
 
 在 SSR（Server-Side Rendering）项目中，`getInitialProps` 是一个特殊的静态方法，用于在**服务端渲染前获取数据**。
 
@@ -1629,8 +1569,6 @@ return (
   
 
 ### getInitialProps 的用途
-
-  
 
 **1. 原样返回（最常见）**
 
@@ -1756,8 +1694,6 @@ APP_SOURCE
 
 ## 七、组件渲染方法
 
-  
-
 ### render 方法解析
 
   
@@ -1819,8 +1755,6 @@ return (
   
 
 ### 条件渲染
-
-  
 
 **1. if-return**
 
@@ -2000,34 +1934,22 @@ return (
 
 ## 总结
 
-  
-
 ### 核心概念速查表
 
   
 
 | 概念 | 说明 | 类比 iOS (OC) |
-
-| --- | --- | --- |
-
+| --------------- | ---------------------- | ------------------------- |
 | Props | 父组件传入的数据，只读 | init 参数 / property 注入 |
-
 | State | 组件内部状态，可修改 | 实例变量 |
-
 | 解构赋值 | 批量提取对象属性 | - |
-
 | 箭头函数 | 自动绑定 this | - |
-
 | render | 渲染组件 UI | viewDidLoad + 更新UI |
-
 | getInitialProps | SSR 数据获取 | - |
 
   
-  
 
 ### 最佳实践
-
-  
 
 1. **Props 用于接收外部数据**，State 用于管理内部状态
 
@@ -2043,8 +1965,6 @@ return (
 
 ### 下一步学习
 
-  
-
 - [第二篇：CSS 布局完全指南](./02-CSS布局完全指南.md)
 
 - [第三篇：CSS 进阶：层级与优先级](./03-CSS进阶层级与优先级.md)
@@ -2058,8 +1978,6 @@ return (
   
 
 **系列文章:**
-
-  
 
 1. 从 iOS 到 Web：React 基础概念指南 (本文)
 
