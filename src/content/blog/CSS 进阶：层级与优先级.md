@@ -1255,9 +1255,3 @@ class ProductCard extends React.Component {
 ```
 
 ---
-
-**系列文章:**
-1. [从 iOS 到 Web：React 基础概念指南](./01-React基础概念指南.md)
-2. [CSS 布局完全指南](./02-CSS布局完全指南.md)
-3. CSS 进阶：层级与优先级 (本文)
-4. [JavaScript 基础语法速查](./04-JavaScript基础语法速查.md)
