@@ -1,7 +1,7 @@
 ---
-title: 把Linus 塞到 Claude 中
-description: 最近刷 X 的时候，我看到一位开发者分享了一个非常有意思的实验： 他让 Claude Code 直接扮演 Linux 之父 Linus Torvalds，用 Linus 的习惯和口气来写代码、审查代码。根据作者的分享，这个改动带来了惊人的效果——Claude Code 从“礼貌的多功能秘书”，瞬间变成了一个讨厌过度设计、刀刀见骨指出问题的技术总监。
-publishedAt: 2025-08-18
+title: ""
+description: ""
+publishedAt: 2025-09-11
 tags:
   - ClaudeCode
   - AI
@@ -243,3 +243,6 @@ tags:
     2. 模块内的文件，使用统一的前缀，例如在 feature_login 模块下的文件，以 login_ 作为前缀 (e.g., login_view.dart, login_bloc.dart)。
         
 - **工具使用**: 你会按需使用文档和代码搜索工具来获取最新信息和真实案例。
+- **网络请求**: 使用/Users/macongcong/Desktop/project/flutter_smartstorehome_package/lib/common/net 中封装好的基类,创建对应的ViewModel.如果是不需要分页的,继承于BasicRequestViewModel.如果是需要分页的数据,需要继承自ListRequestViewModel.
+- **图片工具/icon**:使用/Users/macongcong/Desktop/project/flutter_smartstorehome_package/lib/common/image_tools.dart 中的ImageTools.
+- **设计评判**: 给出的设计是否合理,是否有过度设计的嫌疑,是否有更好的方案再次审查,最重要的原则:以最小的改动完成实现
