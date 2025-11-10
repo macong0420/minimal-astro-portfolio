@@ -15,7 +15,7 @@ tags:
 
   
 
-作为一名 iOS 开发者转向 Web 开发，你会发现很多概念有相似之处，但也有本质区别。本文将通过对比 iOS 和 React 的方式，帮助你快速理解 React 的核心概念。
+作为一名 iOS 开发者转向 Web 开发，你会发现很多概念有相似之处，但也有本质区别。本文将通过对比 iOS (Objective-C) 和 React 的方式，帮助你快速理解 React 的核心概念。
 
   
 
@@ -59,41 +59,77 @@ Props（properties 的缩写）是**父组件传递给子组件的数据**，类
 
   
 
-**iOS (Swift):**
-
-```swift
-
-class DetailViewController: UIViewController {
-
-var userId: String? // 从外部传入
-
-var userName: String? // 从外部传入
+**iOS (Objective-C):**
 
   
 
-init(userId: String, userName: String) {
+```objc
 
-self.userId = userId
+// DetailViewController.h
 
-self.userName = userName
+@interface DetailViewController : UIViewController
 
-super.init(nibName: nil, bundle: nil)
+  
+
+@property (nonatomic, copy) NSString *userId;
+
+@property (nonatomic, copy) NSString *userName;
+
+  
+
+- (instancetype)initWithUserId:(NSString *)userId
+
+userName:(NSString *)userName;
+
+  
+
+@end
+
+  
+
+// DetailViewController.m
+
+@implementation DetailViewController
+
+  
+
+- (instancetype)initWithUserId:(NSString *)userId
+
+userName:(NSString *)userName {
+
+if (self = [super init]) {
+
+_userId = userId;
+
+_userName = userName;
 
 }
 
+return self;
+
 }
+
+  
+
+@end
 
   
 
 // 使用
 
-let vc = DetailViewController(userId: "123", userName: "张三")
+DetailViewController *vc = [[DetailViewController alloc]
+
+initWithUserId:@"123"
+
+userName:@"张三"];
 
 ```
 
   
 
 **React:**
+
+  
 
 ```javascript
 
@@ -113,7 +149,7 @@ userName="张三" // 传入 userName
 
 />
 
-)
+);
 
 }
 
@@ -129,7 +165,7 @@ render() {
 
 // 通过 this.props 访问
 
-const { userId, userName } = this.props
+const { userId, userName } = this.props;
 
   
 
@@ -143,7 +179,7 @@ return (
 
 </div>
 
-)
+);
 
 }
 
@@ -157,7 +193,9 @@ return (
 
   
 
-1. **只读性**：子组件不能修改 props
+**1. 只读性**：子组件不能修改 props
+
+  
 
 ```javascript
 
@@ -167,17 +205,17 @@ render() {
 
 // ✅ 可以读取
 
-console.log(this.props.name)
+console.log(this.props.name);
 
   
 
 // ❌ 不能修改（会报错或无效）
 
-this.props.name = '新名字' // 错误！
+this.props.name = '新名字'; // 错误！
 
   
 
-return <div>{this.props.name}</div>
+return <div>{this.props.name}</div>;
 
 }
 
@@ -187,13 +225,15 @@ return <div>{this.props.name}</div>
 
   
 
-2. **动态性**：父组件改变 props，子组件会自动重新渲染
+**2. 动态性**：父组件改变 props，子组件会自动重新渲染
+
+  
 
 ```javascript
 
 class Parent extends React.Component {
 
-state = { count: 0 }
+state = { count: 0 };
 
   
 
@@ -215,7 +255,7 @@ return (
 
 </div>
 
-)
+);
 
 }
 
@@ -225,7 +265,9 @@ return (
 
   
 
-3. **无需声明**：JavaScript 动态特性，不需要提前声明属性
+**3. 无需声明**：JavaScript 动态特性，不需要提前声明属性
+
+  
 
 ```javascript
 
@@ -239,23 +281,31 @@ render() {
 
 // 直接使用，父组件传什么就有什么
 
-const { name, age, city } = this.props
+const { name, age, city } = this.props;
 
 }
 
 }
+
+```
 
   
 
-// ❌ Swift - 必须先声明
+```objc
 
-class MyView: UIView {
+// ❌ Objective-C - 必须先声明
 
-var name: String? // 必须声明
+@interface MyView : UIView
 
-var age: Int? // 必须声明
+  
 
-}
+@property (nonatomic, copy) NSString *name; // 必须声明
+
+@property (nonatomic, assign) NSInteger age; // 必须声明
+
+  
+
+@end
 
 ```
 
@@ -271,7 +321,7 @@ var age: Int? // 必须声明
 
 ```javascript
 
-import PropTypes from 'prop-types'
+import PropTypes from 'prop-types';
 
   
 
@@ -287,13 +337,13 @@ age: PropTypes.number, // 可选，数字
 
 onUpdate: PropTypes.func // 可选，函数
 
-}
+};
 
   
 
 render() {
 
-const { userId, userName, age, onUpdate } = this.props
+const { userId, userName, age, onUpdate } = this.props;
 
 // ...
 
@@ -325,7 +375,7 @@ const { userId, userName, age, onUpdate } = this.props
 
   
 
-State 是组件**自己管理的内部数据**，类似于 iOS 中的实例属性。
+State 是组件**自己管理的内部数据**，类似于 iOS 中的实例变量。
 
   
 
@@ -333,43 +383,69 @@ State 是组件**自己管理的内部数据**，类似于 iOS 中的实例属�
 
   
 
-**iOS (Swift):**
-
-```swift
-
-class MyViewController: UIViewController {
-
-// 内部状态
-
-var count: Int = 0
-
-var isLoading: Bool = false
+**iOS (Objective-C):**
 
   
 
-func increaseCount() {
+```objc
 
-self.count += 1 // 直接修改
+@interface MyViewController : UIViewController
 
-updateUI() // 手动更新 UI
+  
+
+@property (nonatomic, assign) NSInteger count;
+
+@property (nonatomic, assign) BOOL isLoading;
+
+  
+
+@end
+
+  
+
+@implementation MyViewController
+
+  
+
+- (void)viewDidLoad {
+
+[super viewDidLoad];
+
+self.count = 0;
+
+self.isLoading = NO;
 
 }
 
   
 
-func updateUI() {
+- (void)increaseCount {
 
-label.text = "\(count)"
+self.count++; // 直接修改
+
+[self updateUI]; // 手动更新 UI
 
 }
 
+  
+
+- (void)updateUI {
+
+self.label.text = [NSString stringWithFormat:@"%ld", (long)self.count];
+
 }
+
+  
+
+@end
 
 ```
 
   
 
 **React:**
+
+  
 
 ```javascript
 
@@ -383,7 +459,7 @@ count: 0,
 
 isLoading: false
 
-}
+};
 
   
 
@@ -391,17 +467,17 @@ increaseCount = () => {
 
 // 必须使用 setState 修改
 
-this.setState({ count: this.state.count + 1 })
+this.setState({ count: this.state.count + 1 });
 
 // React 会自动重新渲染组件
 
-}
+};
 
   
 
 render() {
 
-const { count, isLoading } = this.state
+const { count, isLoading } = this.state;
 
   
 
@@ -415,7 +491,7 @@ return (
 
 </div>
 
-)
+);
 
 }
 
@@ -429,7 +505,9 @@ return (
 
   
 
-#### 方式 1：类字段语法（推荐）
+**方式 1：类字段语法（推荐）**
+
+  
 
 ```javascript
 
@@ -441,7 +519,7 @@ count: 0,
 
 name: '张三'
 
-}
+};
 
 }
 
@@ -449,7 +527,9 @@ name: '张三'
 
   
 
-#### 方式 2：Constructor 中定义
+**方式 2：Constructor 中定义**
+
+  
 
 ```javascript
 
@@ -457,7 +537,7 @@ class MyComponent extends React.Component {
 
 constructor(props) {
 
-super(props)
+super(props);
 
 this.state = {
 
@@ -465,7 +545,7 @@ count: 0,
 
 name: '张三'
 
-}
+};
 
 }
 
@@ -481,13 +561,15 @@ name: '张三'
 
 **❌ 错误方式：直接修改**
 
+  
+
 ```javascript
 
 // 直接修改不会触发重新渲染
 
-this.state.count = 10 // ❌ 错误
+this.state.count = 10; // ❌ 错误
 
-this.state.items.push('新项') // ❌ 错误
+this.state.items.push('新项'); // ❌ 错误
 
 ```
 
@@ -495,11 +577,13 @@ this.state.items.push('新项') // ❌ 错误
 
 **✅ 正确方式：使用 setState**
 
+  
+
 ```javascript
 
 // 修改单个属性
 
-this.setState({ count: 10 })
+this.setState({ count: 10 });
 
   
 
@@ -511,7 +595,7 @@ count: 10,
 
 name: '李四'
 
-})
+});
 
   
 
@@ -521,7 +605,7 @@ this.setState(prevState => ({
 
 count: prevState.count + 1
 
-}))
+}));
 
   
 
@@ -531,7 +615,7 @@ this.setState({
 
 items: [...this.state.items, '新项']
 
-})
+});
 
 ```
 
@@ -547,7 +631,7 @@ render() {
 
 // 从 state 解构
 
-const { count, isLoading, items } = this.state
+const { count, isLoading, items } = this.state;
 
   
 
@@ -567,7 +651,7 @@ return (
 
 </div>
 
-)
+);
 
 }
 
@@ -589,18 +673,19 @@ return (
 
 | 特性 | Props | State |
 
-|------|-------|-------|
+| --- | --- | --- |
 
-| **数据来源** | 父组件传入 | 组件内部定义 |
+| 数据来源 | 父组件传入 | 组件内部定义 |
 
-| **能否修改** | ❌ 只读 | ✅ 可修改（用 setState） |
+| 能否修改 | 只读 | 可修改（用 setState） |
 
-| **定义位置** | 父组件 JSX | 组件内 `state = {}` |
+| 定义位置 | 父组件 JSX | 组件内 `state = {}` |
 
-| **用途** | 接收外部配置 | 管理组件状态 |
+| 用途 | 接收外部配置 | 管理组件状态 |
 
-| **iOS 类比** | init 参数/依赖注入 | 实例属性 |
+| iOS 类比 | init 参数/依赖注入 | 实例变量 |
 
+  
   
 
 ### 完整示例
@@ -621,7 +706,7 @@ isZooming: false, // 组件自己管理
 
 startDistance: null // 组件自己管理
 
-}
+};
 
   
 
@@ -637,7 +722,7 @@ image, // 父组件传入图片 URL
 
 onClose // 父组件传入关闭回调
 
-} = this.props
+} = this.props;
 
   
 
@@ -649,11 +734,11 @@ scale, // 组件内部的缩放比例
 
 isZooming // 组件内部的缩放状态
 
-} = this.state
+} = this.state;
 
   
 
-if (!visible) return null
+if (!visible) return null;
 
   
 
@@ -661,19 +746,19 @@ return (
 
 <div className="preview">
 
-<button onClick={onClose}>关闭</button> {/* 使用 props */}
+<button onClick={onClose}>关闭</button>
 
 <img
 
-src={image} // 使用 props
+src={image}
 
-style={{ transform: `scale(${scale})` }} // 使用 state
+style={{ transform: `scale(${scale})` }}
 
 />
 
 </div>
 
-)
+);
 
 }
 
@@ -683,9 +768,9 @@ style={{ transform: `scale(${scale})` }} // 使用 state
 
 handleZoom = () => {
 
-this.setState({ scale: 2.0 }) // ✅ 可以修改 state
+this.setState({ scale: 2.0 }); // ✅ 可以修改 state
 
-}
+};
 
   
 
@@ -693,11 +778,11 @@ this.setState({ scale: 2.0 }) // ✅ 可以修改 state
 
 handleError = () => {
 
-this.props.visible = false // ❌ 错误！props 是只读的
+this.props.visible = false; // ❌ 错误！props 是只读的
 
-this.props.onClose() // ✅ 正确！调用父组件的方法
+this.props.onClose(); // ✅ 正确！调用父组件的方法
 
-}
+};
 
 }
 
@@ -713,7 +798,7 @@ showPreview: false,
 
 currentImage: ''
 
-}
+};
 
   
 
@@ -725,17 +810,17 @@ showPreview: true,
 
 currentImage: url
 
-})
+});
 
-}
+};
 
   
 
 closePreview = () => {
 
-this.setState({ showPreview: false })
+this.setState({ showPreview: false });
 
-}
+};
 
   
 
@@ -755,17 +840,17 @@ return (
 
 <ImagePreview
 
-visible={this.state.showPreview} // 传 props
+visible={this.state.showPreview}
 
-image={this.state.currentImage} // 传 props
+image={this.state.currentImage}
 
-onClose={this.closePreview} // 传 props
+onClose={this.closePreview}
 
 />
 
 </div>
 
-)
+);
 
 }
 
@@ -795,53 +880,99 @@ onClose={this.closePreview} // 传 props
 
   
 
-#### 对象解构
+**对象解构**
+
+  
 
 ```javascript
 
 // 传统方式
 
-const visible = this.props.visible
+const visible = this.props.visible;
 
-const image = this.props.image
+const image = this.props.image;
 
-const onClose = this.props.onClose
+const onClose = this.props.onClose;
 
   
 
 // 解构赋值（推荐）
 
-const { visible, image, onClose } = this.props
+const { visible, image, onClose } = this.props;
 
 ```
 
   
 
-#### 数组解构
+**iOS 对比：**
+
+  
+
+```objc
+
+// Objective-C 没有解构语法，需要逐个赋值
+
+@interface User : NSObject
+
+@property (nonatomic, copy) NSString *name;
+
+@property (nonatomic, assign) NSInteger age;
+
+@property (nonatomic, copy) NSString *city;
+
+@end
+
+  
+
+User *user = [[User alloc] init];
+
+user.name = @"张三";
+
+user.age = 25;
+
+user.city = @"北京";
+
+  
+
+// 需要逐个取值
+
+NSString *name = user.name;
+
+NSInteger age = user.age;
+
+NSString *city = user.city;
+
+```
+
+  
+
+**数组解构**
+
+  
 
 ```javascript
 
-const arr = [1, 2, 3]
+const arr = [1, 2, 3];
 
   
 
 // 传统方式
 
-const first = arr[0]
+const first = arr[0];
 
-const second = arr[1]
+const second = arr[1];
 
   
 
 // 解构赋值
 
-const [first, second, third] = arr
+const [first, second, third] = arr;
 
-console.log(first) // 1
+console.log(first); // 1
 
-console.log(second) // 2
+console.log(second); // 2
 
-console.log(third) // 3
+console.log(third); // 3
 
 ```
 
@@ -851,59 +982,61 @@ console.log(third) // 3
 
   
 
-#### 1. 默认值
+**1. 默认值**
+
+  
 
 ```javascript
 
-const { serviceUcId = '', shareItems = [] } = this.state
-
-// ^^^^ ^^^^
-
-// 默认值 默认值
+const { serviceUcId = '', shareItems = [] } = this.state;
 
   
 
 // 如果 this.state 中没有这些属性
 
-this.state = { APP_SOURCE: 'mobile' }
+this.state = { APP_SOURCE: 'mobile' };
 
   
 
 // 解构后
 
-serviceUcId = '' // 使用默认值
+// serviceUcId = '' // 使用默认值
 
-shareItems = [] // 使用默认值
+// shareItems = [] // 使用默认值
 
-APP_SOURCE = 'mobile' // 从 state 中取到值
+// APP_SOURCE = 'mobile' // 从 state 中取到值
 
 ```
 
   
 
-#### 2. 重命名
+**2. 重命名**
+
+  
 
 ```javascript
 
-const props = { visible: true }
+const props = { visible: true };
 
   
 
 // 提取并重命名
 
-const { visible: isShow } = props
+const { visible: isShow } = props;
 
   
 
-console.log(isShow) // true
+console.log(isShow); // true
 
-console.log(visible) // undefined (变量不存在)
+console.log(visible); // undefined (变量不存在)
 
 ```
 
   
 
-#### 3. 嵌套解构
+**3. 嵌套解构**
+
+  
 
 ```javascript
 
@@ -919,23 +1052,25 @@ street: '朝阳区'
 
 }
 
-}
+};
 
   
 
 // 嵌套解构
 
-const { name, address: { city } } = user
+const { name, address: { city } } = user;
 
-console.log(name) // '张三'
+console.log(name); // '张三'
 
-console.log(city) // '北京'
+console.log(city); // '北京'
 
 ```
 
   
 
-#### 4. 剩余参数
+**4. 剩余参数**
+
+  
 
 ```javascript
 
@@ -949,15 +1084,15 @@ city: '北京',
 
 job: '工程师'
 
-}
+};
 
   
 
-console.log(name) // '张三'
+console.log(name); // '张三'
 
-console.log(age) // 25
+console.log(age); // 25
 
-console.log(rest) // { city: '北京', job: '工程师' }
+console.log(rest); // { city: '北京', job: '工程师' }
 
 ```
 
@@ -975,17 +1110,17 @@ render() {
 
 // 同时解构 props 和 state
 
-const { visible, image, onClose } = this.props
+const { visible, image, onClose } = this.props;
 
-const { scale, isZooming } = this.state
+const { scale, isZooming } = this.state;
 
   
 
 // 函数参数解构
 
-const user = { name: '张三', age: 25 }
+const user = { name: '张三', age: 25 };
 
-this.renderUser(user)
+this.renderUser(user);
 
 }
 
@@ -1003,9 +1138,9 @@ return (
 
 </div>
 
-)
+);
 
-}
+};
 
 }
 
@@ -1035,7 +1170,7 @@ return (
 
 </div>
 
-)
+);
 
 }
 
@@ -1045,9 +1180,9 @@ return (
 
 render() {
 
-const { visible, image, onClose } = this.props
+const { visible, image, onClose } = this.props;
 
-const { scale } = this.state
+const { scale } = this.state;
 
   
 
@@ -1063,7 +1198,7 @@ return (
 
 </div>
 
-)
+);
 
 }
 
@@ -1099,7 +1234,7 @@ class MyComponent extends React.Component {
 
 handleClick() {
 
-console.log(this.props) // undefined ❌
+console.log(this.props); // undefined ❌
 
 }
 
@@ -1107,7 +1242,7 @@ console.log(this.props) // undefined ❌
 
 render() {
 
-return <button onClick={this.handleClick}>点击</button>
+return <button onClick={this.handleClick}>点击</button>;
 
 }
 
@@ -1119,15 +1254,17 @@ return <button onClick={this.handleClick}>点击</button>
 
 **解决方案 1**: 在 constructor 中绑定
 
+  
+
 ```javascript
 
 class MyComponent extends React.Component {
 
 constructor(props) {
 
-super(props)
+super(props);
 
-this.handleClick = this.handleClick.bind(this) // 绑定 this
+this.handleClick = this.handleClick.bind(this); // 绑定 this
 
 }
 
@@ -1135,7 +1272,7 @@ this.handleClick = this.handleClick.bind(this) // 绑定 this
 
 handleClick() {
 
-console.log(this.props) // ✅ 正常
+console.log(this.props); // ✅ 正常
 
 }
 
@@ -1147,6 +1284,8 @@ console.log(this.props) // ✅ 正常
 
 **解决方案 2**: 使用箭头函数（推荐）
 
+  
+
 ```javascript
 
 class MyComponent extends React.Component {
@@ -1155,19 +1294,69 @@ class MyComponent extends React.Component {
 
 handleClick = () => {
 
-console.log(this.props) // ✅ 正常
+console.log(this.props); // ✅ 正常
 
-}
+};
 
   
 
 render() {
 
-return <button onClick={this.handleClick}>点击</button>
+return <button onClick={this.handleClick}>点击</button>;
 
 }
 
 }
+
+```
+
+  
+
+**iOS 对比：**
+
+  
+
+```objc
+
+@interface MyViewController : UIViewController
+
+@end
+
+  
+
+@implementation MyViewController
+
+  
+
+- (void)viewDidLoad {
+
+[super viewDidLoad];
+
+  
+
+UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
+
+[button addTarget:self
+
+action:@selector(handleClick:)
+
+forControlEvents:UIControlEventTouchUpInside];
+
+}
+
+  
+
+- (void)handleClick:(UIButton *)sender {
+
+// self 总是指向 MyViewController 实例
+
+NSLog(@"%@", self.view);
+
+}
+
+  
+
+@end
 
 ```
 
@@ -1177,23 +1366,25 @@ return <button onClick={this.handleClick}>点击</button>
 
   
 
-#### 无参数事件
+**无参数事件**
+
+  
 
 ```javascript
 
 handleClick = () => {
 
-console.log('按钮被点击')
+console.log('按钮被点击');
 
-this.setState({ count: this.state.count + 1 })
+this.setState({ count: this.state.count + 1 });
 
-}
+};
 
   
 
 render() {
 
-return <button onClick={this.handleClick}>点击</button>
+return <button onClick={this.handleClick}>点击</button>;
 
 }
 
@@ -1201,17 +1392,19 @@ return <button onClick={this.handleClick}>点击</button>
 
   
 
-#### 传递参数
+**传递参数**
+
+  
 
 ```javascript
 
 handleItemClick = (item) => {
 
-console.log('点击了:', item)
+console.log('点击了:', item);
 
-this.setState({ selectedItem: item })
+this.setState({ selectedItem: item });
 
-}
+};
 
   
 
@@ -1227,7 +1420,7 @@ return (
 
 key={item.id}
 
-onClick={() => this.handleItemClick(item)} // 箭头函数传参
+onClick={() => this.handleItemClick(item)}
 
 >
 
@@ -1239,7 +1432,7 @@ onClick={() => this.handleItemClick(item)} // 箭头函数传参
 
 </div>
 
-)
+);
 
 }
 
@@ -1247,17 +1440,19 @@ onClick={() => this.handleItemClick(item)} // 箭头函数传参
 
   
 
-#### 事件对象
+**事件对象**
+
+  
 
 ```javascript
 
 handleInputChange = (event) => {
 
-const value = event.target.value
+const value = event.target.value;
 
-this.setState({ inputValue: value })
+this.setState({ inputValue: value });
 
-}
+};
 
   
 
@@ -1273,7 +1468,7 @@ onChange={this.handleInputChange}
 
 />
 
-)
+);
 
 }
 
@@ -1281,17 +1476,19 @@ onChange={this.handleInputChange}
 
   
 
-#### 阻止事件冒泡
+**阻止事件冒泡**
+
+  
 
 ```javascript
 
 handleShareClick = (e, item) => {
 
-e.stopPropagation() // 阻止冒泡到父元素
+e.stopPropagation(); // 阻止冒泡到父元素
 
-this.shareItem(item)
+this.shareItem(item);
 
-}
+};
 
   
 
@@ -1299,111 +1496,9 @@ render() {
 
 return (
 
-<div onClick={this.handleCardClick}> {/* 外层点击 */}
+<div onClick={this.handleCardClick}>
 
 <button onClick={(e) => this.handleShareClick(e, item)}>
-
-分享 {/* 内层点击，不会触发外层 */}
-
-</button>
-
-</div>
-
-)
-
-}
-
-```
-
-  
-
-### 完整示例
-
-  
-
-```javascript
-
-class ShareCard extends React.Component {
-
-state = {
-
-liked: false,
-
-likeCount: 0
-
-}
-
-  
-
-// 点赞
-
-handleLike = () => {
-
-this.setState(prevState => ({
-
-liked: !prevState.liked,
-
-likeCount: prevState.liked
-
-? prevState.likeCount - 1
-
-: prevState.likeCount + 1
-
-}))
-
-}
-
-  
-
-// 分享（阻止冒泡）
-
-handleShare = (e) => {
-
-e.stopPropagation()
-
-console.log('分享:', this.props.item)
-
-}
-
-  
-
-// 卡片点击
-
-handleCardClick = () => {
-
-console.log('查看详情:', this.props.item)
-
-}
-
-  
-
-render() {
-
-const { item } = this.props
-
-const { liked, likeCount } = this.state
-
-  
-
-return (
-
-<div className="card" onClick={this.handleCardClick}>
-
-<img src={item.image} />
-
-<h3>{item.title}</h3>
-
-  
-
-<div className="actions">
-
-<button onClick={this.handleLike}>
-
-{liked ? '❤️' : '🤍'} {likeCount}
-
-</button>
-
-<button onClick={this.handleShare}>
 
 分享
 
@@ -1411,11 +1506,7 @@ return (
 
 </div>
 
-</div>
-
-)
-
-}
+);
 
 }
 
@@ -1455,9 +1546,9 @@ async handler(ctx) {
 
 // 1.1 从接口获取数据
 
-const res = await ProxyApis.constructionShareApi.getConfigItem(ctx, {})
+const res = await ProxyApis.constructionShareApi.getConfigItem(ctx, {});
 
-const shareItems = res.data
+const shareItems = res.data;
 
   
 
@@ -1465,27 +1556,25 @@ const shareItems = res.data
 
 const renderContent = await kssr.render('worker/standard-share-library/index', {
 
-shareItems, // 分享项数据
+shareItems,
 
 projectOrderId: ctx.query.id,
 
 APP_SOURCE: getAppSource(ctx)
 
-})
+});
 
   
 
-ctx.body = renderContent.body
+ctx.body = renderContent.body;
 
 }
 
-}
+};
 
   
 
 // ========== 2. React 组件 ==========
-
-// src/views-react/pages/worker/standard-share-library/index.js
 
 class StandardShareLibrary extends React.Component {
 
@@ -1503,7 +1592,7 @@ projectOrderId, // → 变成 this.props.projectOrderId
 
 APP_SOURCE // → 变成 this.props.APP_SOURCE
 
-}
+};
 
 }
 
@@ -1513,7 +1602,7 @@ APP_SOURCE // → 变成 this.props.APP_SOURCE
 
 render() {
 
-const { shareItems, APP_SOURCE } = this.props
+const { shareItems, APP_SOURCE } = this.props;
 
   
 
@@ -1529,7 +1618,7 @@ return (
 
 </div>
 
-)
+);
 
 }
 
@@ -1543,7 +1632,9 @@ return (
 
   
 
-#### 1. 原样返回（最常见）
+**1. 原样返回（最常见）**
+
+  
 
 ```javascript
 
@@ -1551,7 +1642,7 @@ static async getInitialProps({ shareItems, projectOrderId, APP_SOURCE }) {
 
 // 服务端传什么，就返回什么
 
-return { shareItems, projectOrderId, APP_SOURCE }
+return { shareItems, projectOrderId, APP_SOURCE };
 
 }
 
@@ -1561,7 +1652,7 @@ return { shareItems, projectOrderId, APP_SOURCE }
 
 static async getInitialProps(props) {
 
-return props
+return props;
 
 }
 
@@ -1569,7 +1660,9 @@ return props
 
   
 
-#### 2. 数据转换
+**2. 数据转换**
+
+  
 
 ```javascript
 
@@ -1585,7 +1678,7 @@ projectOrderId,
 
 APP_SOURCE
 
-}
+};
 
 }
 
@@ -1593,7 +1686,9 @@ APP_SOURCE
 
   
 
-#### 3. 额外数据获取
+**3. 额外数据获取**
+
+  
 
 ```javascript
 
@@ -1601,7 +1696,7 @@ static async getInitialProps({ shareItems, projectOrderId, APP_SOURCE }) {
 
 // 在服务端额外获取数据
 
-const projectDetail = await fetch(`/api/project/${projectOrderId}`)
+const projectDetail = await fetch(`/api/project/${projectOrderId}`);
 
   
 
@@ -1615,7 +1710,7 @@ projectDetail, // 新增的数据
 
 APP_SOURCE
 
-}
+};
 
 }
 
@@ -1623,7 +1718,9 @@ APP_SOURCE
 
   
 
-#### 4. 数据验证
+**4. 数据验证**
+
+  
 
 ```javascript
 
@@ -1631,7 +1728,7 @@ static async getInitialProps({ shareItems, projectOrderId, APP_SOURCE }) {
 
 if (!projectOrderId) {
 
-throw new Error('缺少项目 ID')
+throw new Error('缺少项目 ID');
 
 }
 
@@ -1645,7 +1742,7 @@ projectOrderId,
 
 APP_SOURCE
 
-}
+};
 
 }
 
@@ -1671,9 +1768,9 @@ render() {
 
 // 1. 获取数据
 
-const { visible, image, onClose } = this.props
+const { visible, image, onClose } = this.props;
 
-const { scale } = this.state
+const { scale } = this.state;
 
   
 
@@ -1681,7 +1778,7 @@ const { scale } = this.state
 
 if (!visible) {
 
-return null // 不渲染任何内容
+return null; // 不渲染任何内容
 
 }
 
@@ -1693,7 +1790,7 @@ const wrapperStyle = {
 
 width: `${scale * 100}%`
 
-}
+};
 
   
 
@@ -1713,7 +1810,7 @@ return (
 
 </div>
 
-)
+);
 
 }
 
@@ -1725,7 +1822,9 @@ return (
 
   
 
-#### 1. if-return
+**1. if-return**
+
+  
 
 ```javascript
 
@@ -1733,13 +1832,13 @@ render() {
 
 if (!this.props.visible) {
 
-return null
+return null;
 
 }
 
   
 
-return <div>内容</div>
+return <div>内容</div>;
 
 }
 
@@ -1747,7 +1846,9 @@ return <div>内容</div>
 
   
 
-#### 2. 三元表达式
+**2. 三元表达式**
+
+  
 
 ```javascript
 
@@ -1761,7 +1862,7 @@ return (
 
 </div>
 
-)
+);
 
 }
 
@@ -1769,7 +1870,9 @@ return (
 
   
 
-#### 3. 逻辑与 &&
+**3. 逻辑与 &&**
+
+  
 
 ```javascript
 
@@ -1785,7 +1888,7 @@ return (
 
 </div>
 
-)
+);
 
 }
 
@@ -1801,7 +1904,7 @@ return (
 
 render() {
 
-const { items } = this.props
+const { items } = this.props;
 
   
 
@@ -1823,7 +1926,7 @@ return (
 
 </div>
 
-)
+);
 
 }
 
@@ -1859,9 +1962,9 @@ return (
 
 </div>
 
-)
+);
 
-}
+};
 
   
 
@@ -1869,7 +1972,7 @@ return (
 
 render() {
 
-const { items } = this.props
+const { items } = this.props;
 
   
 
@@ -1881,7 +1984,7 @@ return (
 
 </div>
 
-)
+);
 
 }
 
@@ -1903,22 +2006,23 @@ return (
 
   
 
-| 概念 | 说明 | 类比 iOS |
+| 概念 | 说明 | 类比 iOS (OC) |
 
-|------|------|---------|
+| --- | --- | --- |
 
-| **Props** | 父组件传入的数据，只读 | init 参数 / 依赖注入 |
+| Props | 父组件传入的数据，只读 | init 参数 / property 注入 |
 
-| **State** | 组件内部状态，可修改 | 实例属性 |
+| State | 组件内部状态，可修改 | 实例变量 |
 
-| **解构赋值** | 批量提取对象属性 | - |
+| 解构赋值 | 批量提取对象属性 | - |
 
-| **箭头函数** | 自动绑定 this | - |
+| 箭头函数 | 自动绑定 this | - |
 
-| **render** | 渲染组件 UI | viewDidLoad + updateUI |
+| render | 渲染组件 UI | viewDidLoad + 更新UI |
 
-| **getInitialProps** | SSR 数据获取 | - |
+| getInitialProps | SSR 数据获取 | - |
 
+  
   
 
 ### 最佳实践
@@ -1954,6 +2058,8 @@ return (
   
 
 **系列文章:**
+
+  
 
 1. 从 iOS 到 Web：React 基础概念指南 (本文)
 
