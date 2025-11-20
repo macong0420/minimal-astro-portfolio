@@ -36,12 +36,8 @@ tags:
 ## 1.2 经典 isa + superclass 指向图（必背！）
 
 这是 Runtime 的基石，请务必印在脑海里。
-
-![isa flow chart 1](https://yx61ee29nhc.feishu.cn/space/api/box/stream/download/asynccode/?code=MzRkYzNkYmM5ZTFhZjhhYmEyNDgzYWQ1MTcxYjg4NDlfRGRBN0I3amNtQ3VyejNjMkhwbUx3WW83dGw5SnY5OExfVG9rZW46SVF3WmJRczRTb2VPdjV4czhCVmNlRFVVbmJiXzE3NjM2MjY5Mjk6MTc2MzYzMDUyOV9WNA)
-
-![isa flow chart 2](https://yx61ee29nhc.feishu.cn/space/api/box/stream/download/asynccode/?code=MGQ2NDljMGU1NjdlYzc1YWE0Y2ZiZWIxNGJjOThiYjNfbmN1Tkx0WFJYWTlqb1ozUnliZkdzT1Q0bjNSQUpQeUFfVG9rZW46RFNtRWJZWE1Fb3lucFN4UUNnQ2NCdmd4bnFlXzE3NjM2MjY5Mjk6MTc2MzYzMDUyOV9WNA)
-
-![isa flow chart 3](https://yx61ee29nhc.feishu.cn/space/api/box/stream/download/asynccode/?code=YmQ2NDZmZTcwZTVmNzgwZjIyZDFlNDJkNTk5MzNhZDRfYWVDbEtwc0FLbmlHQWFFTEVnb2VSbXNzUUNsVTNFeUNfVG9rZW46T01ZY2JtdWNLb3U3eFd4MzBIcGM5eGk0bmdOXzE3NjM2MjY5Mjk6MTc2MzYzMDUyOV9WNA)
+![image.png](https://raw.githubusercontent.com/macong0420/Image/main/20251120173536633.png)
+![image.png](https://raw.githubusercontent.com/macong0420/Image/main/20251120173611060.png)
 
 ### isa 链（Chain of Identity）完整规则
 1.  实例对象 isa → 类对象
