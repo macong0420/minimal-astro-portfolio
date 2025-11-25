@@ -87,9 +87,9 @@ struct objc_class : objc_object {
 
 3. **cache\_t（方法缓存）**
 
-   C++
 
-   ```
+
+   ```c++
    struct cache_t {   
        bucket_t *_buckets;   // 方法缓存数组   
        mask_t _mask;         // 哈希掩码    
@@ -363,3 +363,6 @@ if (isa.nonpointer &&
 5. **讲特例**：Tagged Pointer 如何利用高位标记和 Payload 存值，不走 isa 逻辑。
 
 6. **升华**：**"这就是 Apple 空间换时间 + 分层处理（Fast Path / Slow Path）的极致哲学。"**
+
+
+
