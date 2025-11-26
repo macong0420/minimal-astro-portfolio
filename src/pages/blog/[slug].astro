@@ -6,13 +6,21 @@ import Tags from "../../components/shared/Tags.astro";
 
 export const getStaticPaths = (async () => {
   const posts = await getCollection("blog");
-  return posts.map((post) => ({
+  const sortedPosts = posts.sort(
+    (a, b) => b.data.publishedAt.valueOf() - a.data.publishedAt.valueOf()
+  );
+
+  return sortedPosts.map((post, index) => ({
     params: { slug: post.id },
-    props: { post },
+    props: {
+      post,
+      nextPost: index > 0 ? sortedPosts[index - 1] : null,
+      prevPost: index < sortedPosts.length - 1 ? sortedPosts[index + 1] : null,
+    },
   }));
 }) satisfies GetStaticPaths;
 
-const { post } = Astro.props;
+const { post, prevPost, nextPost } = Astro.props;
 const { Content } = await render(post);
 
 const formatDate = (date: Date) => {
@@ -40,6 +48,27 @@ const formatDate = (date: Date) => {
     <div class="content">
       <Content />
     </div>
+    <hr class="divider" />
+    <nav class="post-nav">
+      {
+        prevPost ? (
+          <a href={`/blog/${prevPost.id}`} class="nav-link prev">
+            <span class="nav-label">← Previous</span>
+            <span class="nav-title">{prevPost.data.title}</span>
+          </a>
+        ) : (
+          <div />
+        )
+      }
+      {
+        nextPost && (
+          <a href={`/blog/${nextPost.id}`} class="nav-link next">
+            <span class="nav-label">Next →</span>
+            <span class="nav-title">{nextPost.data.title}</span>
+          </a>
+        )
+      }
+    </nav>
   </article>
 </BaseLayout>
 
@@ -141,9 +170,64 @@ const formatDate = (date: Date) => {
     margin: 0.5rem 0;
   }
 
+  .divider {
+    margin: 3rem 0;
+    border: 0;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .post-nav {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 2rem;
+  }
+
+  .nav-link {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    text-decoration: none;
+    color: var(--text-primary);
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+  }
+
+  .nav-link:hover {
+    border-color: var(--primary-color);
+    background: var(--hover-bg);
+  }
+
+  .nav-link.next {
+    text-align: right;
+    align-items: flex-end;
+  }
+
+  .nav-label {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+  }
+
+  .nav-title {
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
   @media (max-width: 640px) {
     main {
       padding: 1rem;
+    }
+
+    .post-nav {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .nav-link.next {
+      text-align: left;
+      align-items: flex-start;
     }
   }
 </style>
