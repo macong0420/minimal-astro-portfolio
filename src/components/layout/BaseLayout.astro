@@ -171,6 +171,12 @@ const { title, description, image = "/default-og-image.jpg", canonicalURL = Astr
     padding: 0 1.5rem;
     box-sizing: border-box;
   }
+
+  @media (max-width: 640px) {
+    .content-wrapper {
+      padding: 0;
+    }
+  }
   
   /* 平板设备增加内边距 */
   @media (min-width: 768px) {
