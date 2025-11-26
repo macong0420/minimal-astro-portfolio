@@ -48,9 +48,9 @@ NSInvocation 是一个**被“冷冻”的方法调用对象**。
 你要调用一个方法，必须先知道这个方法长什么样：返回值是啥？有几个参数？参数类型是啥？\
 这就是**方法签名**。
 
-codeObjective-C
 
-```
+
+```objc
 // 假设我们要调用的目标方法是：
 // - (void)printName:(NSString *)name age:(int)age;
 
@@ -70,9 +70,8 @@ NSMethodSignature *signature = [TargetClass instanceMethodSignatureForSelector:s
 
 有了蓝图，就能制造出一个能容纳这些参数的空盒子。
 
-codeObjective-C
 
-```
+```objc
 NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:signature];
 ```
 
@@ -93,9 +92,9 @@ Objective-C 的任何方法，底层实际上都有两个**隐藏参数**：
 setArgument:atIndex: 这个方法非常底层，它不管你传的是对象还是整数，它只负责**从内存地址拷贝数据**。\
 所以，你必须传值的**地址 (&)**。
 
-codeObjective-C
 
-```
+
+```objc
 // 设置目标和方法
 [invocation setTarget:myTargetObj];
 [invocation setSelector:selector];
