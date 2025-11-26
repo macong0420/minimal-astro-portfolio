@@ -14,8 +14,8 @@ export const getStaticPaths = (async () => {
     params: { slug: post.id },
     props: {
       post,
-      nextPost: index > 0 ? sortedPosts[index - 1] : null,
-      prevPost: index < sortedPosts.length - 1 ? sortedPosts[index + 1] : null,
+      prevPost: index > 0 ? sortedPosts[index - 1] : null,
+      nextPost: index < sortedPosts.length - 1 ? sortedPosts[index + 1] : null,
     },
   }));
 }) satisfies GetStaticPaths;
