@@ -6,9 +6,8 @@ tags:
   - "iOS"
   - "堆栈"
 ---
+![image.png](https://raw.githubusercontent.com/macong0420/Image/main/20251126164315312.png)
 
-
-![image.png](https://raw.githubusercontent.com/macong0420/Image/main/20251125122051559.png)
 
 
 # iOS 内存架构深度解析：堆 (Heap) 与 栈 (Stack)
