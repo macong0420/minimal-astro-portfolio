@@ -812,3 +812,4 @@ RunLoop 如何管理内存？它注册了两个 Observer，回调优先级（Ord
 
 - **不要只说**“Mode 切换会暂停 Timer”。\
   **要说**：RunLoop 的结构决定了同一时间只能持有一个 currentMode，数据结构上的隔离导致了其他 Mode 的 Item 无法被 DoSources 遍历到。
+

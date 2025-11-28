@@ -56,6 +56,10 @@ tags:
 
 ## 3. 深度实现原理 (Under the Hood)
 
+![Google Gemini Image (3).png](https://raw.githubusercontent.com/macong0420/Image/main/20251128152848143.png)
+
+
+
 ### 3.1 Android 端实现机制
 
 基于 OpenGL ES 和 SurfaceTexture。
@@ -127,6 +131,7 @@ Flutter 与 Native 通过 MethodChannel 交换 textureId 和控制信号。例�
   ```
 
 效果：内存峰值控制在单 tile 大小（e.g., 512x512），适合无限滚动场景。
+
 
 ### 4.3 内存复用 (Bitmap Pooling)
 
