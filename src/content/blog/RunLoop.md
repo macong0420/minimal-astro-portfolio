@@ -667,9 +667,9 @@ RunLoop 的“休眠”绝对不是 while(1) { sleep() }。
 
 RunLoop 的核心逻辑在 \_\_CFRunLoopRun 函数中，最终会调用：
 
-codeC
 
-```
+
+```c
 mach_msg(msg, MACH_RCV_MSG, ..., timeout, ...);
 ```
 

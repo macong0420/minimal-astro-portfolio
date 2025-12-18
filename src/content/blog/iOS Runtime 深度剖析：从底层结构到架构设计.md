@@ -18,13 +18,13 @@ tags:
 
 ```mermaid
 graph TD
-    Start[objc_msgSend] --> A{1Fast Path<br/>汇编层缓存查找}
+    Start[objc_msgSend] --> A{1,Fast Path<br/>汇编层缓存查找}
     A -->|Cache Hit| IMP[调用 IMP]
-    A -->|Cache Miss| B{2Slow Path<br/>C++层慢速查找}
+    A -->|Cache Miss| B{2,Slow Path<br/>C++层慢速查找}
     B -->|Found| FillCache[写入 Cache] --> IMP
-    B -->|Not Found| C{3动态决议<br/>Method Resolution}
+    B -->|Not Found| C{3,动态决议<br/>Method Resolution}
     C -->|Resolved| Retry[重新查找]
-    C -->|Failed| D{4消息转发<br/>Message Forwarding}
+    C -->|Failed| D{4,消息转发<br/>Message Forwarding}
     D -->|Fast| Target[备用接收者]
     D -->|Normal| Invo[NSInvocation]
     D -->|All Failed| Crash[Crash]

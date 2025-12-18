@@ -32,7 +32,7 @@ graph BT
 
 ### 1.2 objc\_class 结构体
 
-```C++
+```C
 struct objc_class : objc_object {
     // Class ISA;           // 继承自 objc_object，占 8 字节
     Class superclass;       // 父类指针，占 8 字节
@@ -44,7 +44,7 @@ struct objc_class : objc_object {
 ## 2. ISA\_T 位域 (Non-pointer isa)
 
 在 64 位架构下，指针占 64 bit，但存储一个内存地址不需要这么多位。Apple 利用剩余空间存储了大量信息：
-```C++
+```C
 union isa_t {
     uintptr_t bits;
     struct {
