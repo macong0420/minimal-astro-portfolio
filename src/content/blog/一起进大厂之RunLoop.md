@@ -154,7 +154,7 @@ int main(int argc, char * argv[]) {
 
 ## PerformSelector:afterDelay:这个方法在子线程中是否起作用?为什么?怎么解决?
 
-当调用 NSObject 的 performSelecter:afterDelay: 后，实际上其内部会创建一个 Timer 并添加到当前线程的 RunLoop 中。所以如果当前线程没有 RunLoop，则这个方***失效。
+当调用 NSObject 的 performSelecter:afterDelay: 后，实际上其内部会创建一个 Timer 并添加到当前线程的 RunLoop 中。所以如果当前线程没有 RunLoop，则这个方法会失效。
 
 当调用 performSelector:onThread: 时，实际上其会创建一个 Timer 加到对应的线程去，同样的，如果对应线程没有 RunLoop 该方法也会失效。
 
@@ -264,7 +264,7 @@ RunLoop 启动前内部必须要有至少一个 Timer/Observer/Source，所以 A
 
 当调用 performSelector:onThread: 时，实际上其会创建一个 Timer 加到对应的线程去，同样的，如果对应线程没有 RunLoop 该方法也会失效，
 
-## CADispalyTimer和Timer哪个更精确
+## CADisplayLink 和Timer哪个更精确
 
 当然是CADisplayLink 更精确。
 
