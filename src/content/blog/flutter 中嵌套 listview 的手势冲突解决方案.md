@@ -22,7 +22,6 @@ tags:
     1. 当你向上滑动时，它优先消耗外部 `Header` 的位移，直到 Header 被折叠到最小高度。
         
     2. 一旦 Header 无法再折叠，它会**无缝地**将剩余的滚动增量（Delta）传递给内部的 `ListView`。
-        
 
 > **提示**：在 `NestedScrollView` 的 `Body` 里使用 `ListView` 时，必须设置 `controller` 或使用 `Sliver` 系列组件，并确保 `physics` 允许协同。
 
