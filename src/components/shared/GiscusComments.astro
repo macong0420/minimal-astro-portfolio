@@ -24,6 +24,8 @@ const giscusConfig = {
 </section>
 
 <script
+  is:inline
+  data-astro-rerun
   src="https://giscus.app/client.js"
   data-repo={giscusConfig.repo}
   data-repo-id={giscusConfig.repoId}
@@ -41,13 +43,13 @@ const giscusConfig = {
   async
 ></script>
 
-<script>
+<script is:inline data-astro-rerun>
   // 监听主题变化，同步更新 Giscus 主题
   function updateGiscusTheme() {
     const theme = document.documentElement.getAttribute('data-theme');
     const giscusTheme = theme === 'dark' ? 'dark' : 'light';
     
-    const iframe = document.querySelector<HTMLIFrameElement>('iframe.giscus-frame');
+    const iframe = document.querySelector('iframe.giscus-frame');
     if (iframe) {
       iframe.contentWindow?.postMessage(
         { giscus: { setConfig: { theme: giscusTheme } } },
