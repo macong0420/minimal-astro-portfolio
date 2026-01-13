@@ -76,9 +76,18 @@ const giscusConfig = {
     margin-top: 3rem;
     padding-top: 2rem;
     border-top: 1px solid var(--border-color);
+    width: 100%;
   }
 
   .giscus {
+    width: 100%;
     max-width: 100%;
+  }
+
+  /* giscus iframe 是运行时注入的，需要用 :global 才能命中 */
+  .giscus :global(iframe.giscus-frame) {
+    display: block;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 </style>
