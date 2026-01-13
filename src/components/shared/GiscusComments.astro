@@ -1,0 +1,82 @@
+---
+interface Props {
+  theme?: 'light' | 'dark' | 'preferred_color_scheme';
+}
+
+const { theme = 'preferred_color_scheme' } = Astro.props;
+
+// Giscus 配置
+const giscusConfig = {
+  repo: 'macong0420/minimal-astro-portfolio',
+  repoId: 'R_kgDOOMJqwg',
+  category: 'Announcements',
+  categoryId: 'DIC_kwDOOMJqws4C05Cb',
+  mapping: 'pathname',
+  reactionsEnabled: '1',
+  emitMetadata: '0',
+  inputPosition: 'bottom',
+  lang: 'zh-CN',
+};
+---
+
+<section class="giscus-wrapper">
+  <div class="giscus"></div>
+</section>
+
+<script
+  src="https://giscus.app/client.js"
+  data-repo={giscusConfig.repo}
+  data-repo-id={giscusConfig.repoId}
+  data-category={giscusConfig.category}
+  data-category-id={giscusConfig.categoryId}
+  data-mapping={giscusConfig.mapping}
+  data-strict="0"
+  data-reactions-enabled={giscusConfig.reactionsEnabled}
+  data-emit-metadata={giscusConfig.emitMetadata}
+  data-input-position={giscusConfig.inputPosition}
+  data-theme="preferred_color_scheme"
+  data-lang={giscusConfig.lang}
+  data-loading="lazy"
+  crossorigin="anonymous"
+  async
+></script>
+
+<script>
+  // 监听主题变化，同步更新 Giscus 主题
+  function updateGiscusTheme() {
+    const theme = document.documentElement.getAttribute('data-theme');
+    const giscusTheme = theme === 'dark' ? 'dark' : 'light';
+    
+    const iframe = document.querySelector<HTMLIFrameElement>('iframe.giscus-frame');
+    if (iframe) {
+      iframe.contentWindow?.postMessage(
+        { giscus: { setConfig: { theme: giscusTheme } } },
+        'https://giscus.app'
+      );
+    }
+  }
+
+  // 监听主题切换
+  const observer = new MutationObserver(updateGiscusTheme);
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-theme']
+  });
+
+  // 页面加载后设置正确的主题
+  document.addEventListener('astro:page-load', () => {
+    setTimeout(updateGiscusTheme, 1000);
+  });
+</script>
+
+<style>
+  .giscus-wrapper {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .giscus {
+    max-width: 100%;
+  }
+</style>

@@ -3,6 +3,7 @@ import { getCollection, render } from "astro:content";
 import type { GetStaticPaths } from "astro";
 import BaseLayout from "../../components/layout/BaseLayout.astro";
 import Tags from "../../components/shared/Tags.astro";
+import GiscusComments from "../../components/shared/GiscusComments.astro";
 
 export const getStaticPaths = (async () => {
   const posts = await getCollection("blog");
@@ -48,6 +49,9 @@ const formatDate = (date: Date) => {
     <div class="content">
       <Content />
     </div>
+    <!-- 评论区 -->
+    <GiscusComments />
+    
     <hr class="divider" />
     <nav class="post-nav">
       {
