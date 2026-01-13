@@ -1,0 +1,7 @@
+{"type":"meta","id":"conv-1767598263404-jyzwjm3si","title":"阅读这篇文章","createdAt":1767598263408,"updatedAt":1767609929890,"lastResponseAt":1767609929890,"sessionId":"38f4404d-f95e-4116-8702-7bb136bfc134","attachedFiles":["src/content/blog/算法思想.md"]}
+{"type":"message","message":{"id":"msg-1767598286439-pjmxbe0ea","role":"user","content":"阅读这篇文章","timestamp":1767598286439,"contextFiles":["src/content/blog/算法思想.md"]}}
+{"type":"message","message":{"id":"msg-1767598286443-kwe331rld","role":"assistant","content":"","timestamp":1767598286443,"toolCalls":[],"contentBlocks":[]}}
+{"type":"message","message":{"id":"msg-1767609887887-ha9gu4bte","role":"user","content":"?","timestamp":1767609887887}}
+{"type":"message","message":{"id":"msg-1767609887895-cn2o5wqns","role":"assistant","content":"","timestamp":1767609887895,"toolCalls":[],"contentBlocks":[]}}
+{"type":"message","message":{"id":"msg-1767609928970-vovlviczz","role":"user","content":"阅读这篇文章","timestamp":1767609928970}}
+{"type":"message","message":{"id":"msg-1767609928975-h7cs76sbr","role":"assistant","content":"","timestamp":1767609928975,"toolCalls":[],"contentBlocks":[]}}
