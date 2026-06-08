@@ -2,7 +2,6 @@
 title: "cursor 起飞"
 description: "Cursor 全局通用规则 V4.5：多维思考 + 五种规则模式，让你的编码飞起来！"
 publishedAt: "2025-05-29"
-draft: false
 tags:
   - "cursor"
   - "ai"
