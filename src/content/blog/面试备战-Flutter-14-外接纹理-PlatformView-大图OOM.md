@@ -167,6 +167,160 @@ flowchart TD
     D --> E["注册 Texture / 更新纹理"]
     E --> F["返回 textureId"]
     F --> G["Flutter Texture 显示"]
+
+---
+
+## 🔬 深度扩展：Texture与PlatformView的性能对比
+
+### 扩展1：PlatformView的实现方式
+
+**iOS（UiKitView）：**
+```text
+Hybrid Composition（混合合成）：
+- Native视图真实插入层级
+- Flutter内容用overlay层交错
+- Raster线程和Platform线程合并
+- 性能开销大
+```
+
+**Android：**
+```text
+方案演进：
+1. Virtual Display（旧）：离屏渲染
+2. Hybrid Composition：真实插入
+3. TLHC（新）：Texture Layer混合
+```
+
+### 扩展2：Texture的完整实现
+
+**Native侧注册Texture：**
+```objc
+// iOS
+@interface MyTexturePlugin : NSObject <FlutterTexture>
+@property (nonatomic) CVPixelBufferRef pixelBuffer;
+@end
+
+@implementation MyTexturePlugin
+
+- (CVPixelBufferRef)copyPixelBuffer {
+    CVPixelBufferRetain(_pixelBuffer);
+    return _pixelBuffer;
+}
+
+- (void)onTextureUnregistered:(NSObject<FlutterTexture> *)texture {
+    CVPixelBufferRelease(_pixelBuffer);
+}
+
+@end
+
+// 注册
+NSObject<FlutterTextureRegistry> *registry = [engine textureRegistry];
+int64_t textureId = [registry registerTexture:texturePlugin];
+
+// 通知Flutter更新
+[registry textureFrameAvailable:textureId];
+```
+
+**Flutter侧显示：**
+```dart
+Texture(textureId: textureId)
+```
+
+### 扩展3：大图下采样优化
+
+**问题：**
+```text
+1920x1080图片，显示在100x100的ImageView
+= 内存占用：1920×1080×4 = 8MB
+= 实际需要：100×100×4 = 40KB
+```
+
+**下采样：**
+```objc
+// iOS下采样
+- (UIImage *)downsampleImage:(NSString *)path targetSize:(CGSize)targetSize {
+    NSURL *url = [NSURL fileURLWithPath:path];
+    
+    CGImageSourceRef source = CGImageSourceCreateWithURL((CFURLRef)url, NULL);
+    
+    NSDictionary *options = @{
+        (id)kCGImageSourceThumbnailMaxPixelSize: @(MAX(targetSize.width, targetSize.height)),
+        (id)kCGImageSourceCreateThumbnailFromImageAlways: @YES,
+        (id)kCGImageSourceCreateThumbnailWithTransform: @YES,
+    };
+    
+    CGImageRef thumbnail = CGImageSourceCreateThumbnailAtIndex(source, 0, (CFDictionaryRef)options);
+    UIImage *image = [UIImage imageWithCGImage:thumbnail];
+    
+    CGImageRelease(thumbnail);
+    CFRelease(source);
+    
+    return image;
+}
+```
+
+### 扩展4：性能对比
+
+**方案对比：**
+| 方案 | 内存 | 性能 | 手势 | 使用场景 |
+|------|------|------|------|---------|
+| Image.network | 低 | 高 | ✅ | 普通图片 |
+| Texture | 中 | 高 | ✅ | 视频、相机 |
+| PlatformView | 高 | 低 | ⚠️ | 必须用Native控件 |
+
+### 扩展5：PlatformView的性能问题
+
+**Thread Merge：**
+```text
+正常：
+UI Thread: Build/Layout/Paint
+Raster Thread: 光栅化
+
+PlatformView：
+UI + Raster 合并到Platform Thread
+→ 失去并行优势
+→ 性能下降
+```
+
+### 扩展6：WebView的优化策略
+
+**问题：**
+```dart
+// PlatformView方式，性能差
+WebView(initialUrl: url);
+```
+
+**优化：**
+```dart
+// 方案1：InAppWebView（优化过的PlatformView）
+InAppWebView(initialUrlRequest: URLRequest(url: Uri.parse(url)));
+
+// 方案2：混合方案（简单页面用flutter_html）
+if (isSimplePage) {
+  Html(data: htmlContent);  // Flutter渲染
+} else {
+  WebView(initialUrl: url);  // PlatformView
+}
+```
+
+---
+
+## 补充总结
+
+Texture与PlatformView的深度记忆点：
+
+1. **PlatformView**：iOS用Hybrid Composition、Thread Merge导致性能下降
+2. **Texture**：Native渲染到纹理、Flutter显示、性能更好
+3. **大图优化**：下采样、减少内存占用
+4. **性能对比**：Image > Texture > PlatformView
+5. **Thread Merge**：UI和Raster线程合并、失去并行
+6. **WebView优化**：简单页面用flutter_html、复杂页面用优化的PlatformView
+
+面试追问时要能讲出：
+- PlatformView的性能问题（Thread Merge）
+- Texture的实现机制（Native纹理、Flutter显示）
+- 大图下采样的必要性（内存占用差异）
+- 何时用Texture何时用PlatformView（视频vs必须Native控件）
 ```
 
 关键是 Flutter 不拿原始大图 bytes，不在 Dart 层完整解码。

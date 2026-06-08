@@ -247,6 +247,224 @@ dyld/Runtime 会利用这些元数据完成类注册、Category 合并、selecto
 风险：
 
 - 采集样本不准会优化错路径。
+
+---
+
+## 🔬 深度扩展：Mach-O Header与Segment的完整结构
+
+### 扩展1：Mach-O Header详解
+
+**结构体定义：**
+```c
+struct mach_header_64 {
+    uint32_t magic;        // 0xfeedfacf (64位)
+    cpu_type_t cputype;    // CPU类型 (ARM64)
+    cpu_subtype_t cpusubtype;
+    uint32_t filetype;     // MH_EXECUTE/MH_DYLIB/MH_BUNDLE
+    uint32_t ncmds;        // Load Commands数量
+    uint32_t sizeofcmds;   // Load Commands总大小
+    uint32_t flags;        // 标志位
+    uint32_t reserved;
+};
+```
+
+**filetype类型：**
+- `MH_EXECUTE`：可执行文件
+- `MH_DYLIB`：动态库
+- `MH_BUNDLE`：插件
+- `MH_OBJECT`：.o目标文件
+
+### 扩展2：Load Commands的关键命令
+
+**LC_SEGMENT_64：段加载**
+```c
+struct segment_command_64 {
+    uint32_t cmd;          // LC_SEGMENT_64
+    uint32_t cmdsize;
+    char segname[16];      // __TEXT, __DATA
+    uint64_t vmaddr;       // 虚拟内存地址
+    uint64_t vmsize;       // 虚拟内存大小
+    uint64_t fileoff;      // 文件偏移
+    uint64_t filesize;     // 文件大小
+    // ...
+};
+```
+
+**LC_LOAD_DYLIB：依赖库**
+```c
+struct dylib_command {
+    uint32_t cmd;          // LC_LOAD_DYLIB
+    uint32_t cmdsize;
+    struct dylib {
+        uint32_t name;     // 库路径
+        uint32_t timestamp;
+        uint32_t current_version;
+        uint32_t compatibility_version;
+    } dylib;
+};
+```
+
+### 扩展3：__TEXT和__DATA段的Section
+
+**__TEXT段（只读）：**
+- `__text`：机器码
+- `__stubs`：符号桩
+- `__stub_helper`：桩辅助
+- `__cstring`：C字符串
+- `__objc_methname`：ObjC方法名
+- `__objc_classname`：ObjC类名
+
+**__DATA段（可写）：**
+- `__data`：已初始化全局变量
+- `__bss`：未初始化全局变量
+- `__objc_classlist`：类列表
+- `__objc_catlist`：Category列表
+- `__objc_selrefs`：selector引用
+- `__objc_classrefs`：类引用
+
+### 扩展4：符号表与动态链接
+
+**符号表结构：**
+```c
+struct nlist_64 {
+    uint32_t n_strx;    // 符号名在字符串表的偏移
+    uint8_t n_type;     // 符号类型
+    uint8_t n_sect;     // section索引
+    uint16_t n_desc;    // 描述
+    uint64_t n_value;   // 符号地址/值
+};
+```
+
+**Bind操作：**
+```text
+外部符号引用（如printf）：
+1. __DATA段保留占位符
+2. dyld读取bind info
+3. 查找符号在动态库中的地址
+4. 写入占位符位置
+```
+
+### 扩展5：静态库vs动态库的链接差异
+
+**静态库（.a）：**
+```text
+编译时：
+1. 提取.a中需要的.o文件
+2. 合并到主二进制
+3. 符号直接解析
+
+结果：
+- 包体变大（所有.o都打进去）
+- 启动快（无dyld加载）
+- 无法共享（多target重复）
+```
+
+**动态库（.dylib/.framework）：**
+```text
+编译时：
+1. 记录依赖关系（LC_LOAD_DYLIB）
+2. 符号标记为外部引用
+
+运行时：
+1. dyld加载动态库
+2. Rebase修正地址
+3. Bind绑定符号
+
+结果：
+- 包体小（不合并代码）
+- 启动慢（dyld加载+绑定）
+- 可共享（Extension共用）
+```
+
+### 扩展6：dyld的符号查找顺序
+
+**Flat Namespace（扁平命名空间）：**
+```text
+查找顺序：
+1. 主二进制
+2. 按依赖顺序查找所有动态库
+3. 找到第一个匹配的符号
+```
+
+**Two-Level Namespace（两级命名空间，默认）：**
+```text
+查找顺序：
+1. 符号记录了来自哪个库
+2. 直接在该库中查找
+3. 更快、更安全
+```
+
+### 扩展7：LinkMap的实战分析
+
+**LinkMap包含：**
+```text
+# Object files:
+[0] linker synthesized
+[1] /path/to/main.o
+[2] /path/to/MyClass.o
+
+# Sections:
+# Address    Size       Segment  Section
+0x100001000  0x1234    __TEXT   __text
+0x100002234  0x5678    __DATA   __data
+
+# Symbols:
+# Address    Size       File     Name
+0x100001000  0x100     [1]      _main
+0x100001100  0x200     [2]      -[MyClass method]
+```
+
+**优化用法：**
+```bash
+# 按Size排序，找最大的符号
+grep "^0x" LinkMap.txt | awk '{print $2, $4}' | sort -rn | head -20
+
+# 统计各.o文件贡献
+grep "\.o" LinkMap.txt | awk '{sum[$4]+=$2} END {for(i in sum) print sum[i], i}' | sort -rn
+```
+
+### 扩展8：Mach-O工具链
+
+**otool（查看结构）：**
+```bash
+otool -h MyApp        # Header
+otool -l MyApp        # Load Commands
+otool -L MyApp        # 依赖库
+otool -tV MyApp       # 反汇编
+```
+
+**nm（查看符号）：**
+```bash
+nm -nm MyApp          # 符号表
+nm -u MyApp           # 未定义符号（外部引用）
+nm -A MyApp           # 显示来源文件
+```
+
+**size（查看大小）：**
+```bash
+size -m -x MyApp      # 各段大小
+```
+
+---
+
+## 补充总结
+
+Mach-O结构的深度记忆点：
+
+1. **Header**：magic、cputype、filetype、ncmds标识文件基本信息
+2. **Load Commands**：LC_SEGMENT_64加载段、LC_LOAD_DYLIB依赖库
+3. **__TEXT段**：只读，包含代码、字符串、ObjC元数据名称
+4. **__DATA段**：可写，包含全局变量、ObjC类列表、selector引用
+5. **符号表**：nlist_64结构，记录符号名、类型、地址
+6. **静态vs动态**：静态合并进主二进制，动态运行时加载
+7. **LinkMap**：分析包体贡献、优化大小
+8. **工具链**：otool查结构、nm查符号、size查大小
+
+面试追问时要能讲出：
+- Mach-O的三层结构（Header → Load Commands → Segments/Sections）
+- __TEXT和__DATA的Section列表（__text、__objc_classlist等）
+- 静态库和动态库的链接差异（编译时合并vs运行时加载）
+- LinkMap的分析方法（按Size排序、统计.o贡献）
 - 版本迭代后 order file 会过期。
 - Swift/ObjC/C++ 符号混合时要保证符号名匹配。
 - 只优化冷启动早期路径，不解决 `+load` 重活、主线程 I/O 和 SDK 初始化。

@@ -197,6 +197,153 @@ Mach-O/dyld 决定代码如何进入进程
   -> objc_msgSend 用 isa/cache/superclass 完成动态派发
   -> ARC/SideTable/weak 管对象生命周期
   -> RunLoop/GCD 决定任务何时在哪个线程执行
+
+---
+
+## 🔬 深度扩展：iOS底层知识的完整因果链
+
+### 扩展1：从Mach-O到Runtime的完整链路
+
+**加载链路：**
+```text
+1. Mach-O 存储 → __objc_classlist/__objc_catlist
+2. dyld 加载 → map_images
+3. Runtime _read_images → realize classes
+4. attachCategories → 合并 Category 方法
+5. objc_msgSend → 查找 IMP 并调用
+```
+
+**关键连接点：**
+- Mach-O 定义了"什么需要加载"
+- dyld 负责"怎么加载到内存"
+- Runtime 负责"怎么组织成可用的类结构"
+- objc_msgSend 负责"怎么找到并执行方法"
+
+### 扩展2：isa指针的三重身份
+
+**1. 类型标识**：指向对象的类
+**2. 引用计数优化**：extra_rc 存储部分引用计数
+**3. 状态标记**：weakly_referenced、has_assoc、deallocating 等
+
+**为什么这样设计？**
+- 64位指针只需要 33 位表示类地址（虚拟内存空间限制）
+- 剩余 31 位用于存储高频访问的状态
+- 避免每次都查 SideTable，提升性能
+
+### 扩展3：方法查找的四级缓存
+
+**查找顺序：**
+```text
+1. cache（单个类的方法缓存）
+2. 当前类的方法列表
+3. 父类链的 cache 和方法列表
+4. 消息转发（动态解析、快速转发、完整转发）
+```
+
+**缓存策略：**
+- cache 使用哈希表，$0 时间查找
+- 命中率通常 > 90%
+- cache_fill 时可能扩容，扩容会清空旧数据
+
+### 扩展4：内存管理的分层设计
+
+**三层结构：**
+```text
+1. isa.extra_rc（存储少量引用计数，快速路径）
+2. SideTable.refcnts（溢出后的引用计数）
+3. SideTable.weak_table（weak 引用表）
+```
+
+**为什么分层？**
+- isa 访问最快（对象内部）
+- SideTable 需要全局锁，但避免了每个对象都分配独立表
+- 分段锁设计降低竞争
+
+### 扩展5：RunLoop和其他机制的集成点
+
+**RunLoop 是协调中心：**
+```text
+- AutoreleasePool：Observer 在 Entry/BeforeWaiting/Exit 管理
+- NSTimer：添加到 RunLoop 的 Timer 源
+- GCD main queue：dispatchPort 唤醒 RunLoop
+- 事件响应：Source1（IOKit）→ Source0（UIEvent）
+- 卡顿监控：Observer 记录状态变化
+```
+
+### 扩展6：多线程安全的代价对比
+
+**无锁 < 自旋锁 < 互斥锁 < 条件锁 < 分布式锁**
+
+| 场景 | 推荐方案 | 原因 |
+|------|---------|------|
+| 读多写少 | dispatch_barrier | 读并发，写串行 |
+| 短临界区 | os_unfair_lock | 用户态快速路径 |
+| 需要递归 | NSRecursiveLock | 记录持有线程 |
+| 控制并发数 | dispatch_semaphore | 信号量控制 |
+
+### 扩展7：性能优化的底层依据
+
+**启动优化：**
+- dyld3 闭包缓存 → 减少依赖解析
+- 二进制重排 → 减少 Page Fault
+- +load 延迟 → 减少 pre-main 时间
+
+**卡顿优化：**
+- RunLoop 监控 → 定位主线程阻塞
+- Time Profiler → 找出 CPU 热点
+- Instruments → 分析渲染瓶颈
+
+**内存优化：**
+- Memory Graph → 找循环引用
+- Allocations → 找峰值原因
+- VM Tracker → 找非堆内存
+
+### 扩展8：面试追问的因果推理
+
+**问：为什么 Category 能覆盖原方法？**
+```text
+因果链：
+1. Category 方法在 attachCategories 时插到方法列表最前面
+2. objc_msgSend 遍历方法列表，先命中 Category 的
+3. 原方法仍在列表里，但不会被调用
+```
+
+**问：为什么 weak 比 strong 慢？**
+```text
+因果链：
+1. weak 赋值要查 SideTable.weak_table
+2. 需要全局锁保护
+3. 需要在 weak_entry 中注册 referrer
+4. 读取时要检查对象是否在 deallocating
+```
+
+**问：为什么 Block 容易循环引用？**
+```text
+因果链：
+1. Block 捕获对象会 retain
+2. self.block = ^{ self.xxx } → self 持有 block
+3. block 持有 self → 形成环
+4. 需要 __weak 打破持有链
+```
+
+---
+
+## 补充总结
+
+iOS底层的深度记忆点：
+
+1. **Mach-O → dyld → Runtime**：加载和初始化的完整链路
+2. **isa 三重身份**：类型、引用计数、状态标记
+3. **方法查找四级**：cache → 类 → 父类 → 转发
+4. **内存管理三层**：isa.extra_rc → SideTable.refcnts → weak_table
+5. **RunLoop 集成点**：AutoreleasePool、Timer、GCD、事件、监控
+6. **性能优化依据**：基于底层机制做针对性优化
+
+面试追问时要能讲出：
+- 各个机制之间的因果关系（不是孤立的知识点）
+- 设计原因（为什么要分层、为什么要缓存）
+- 性能代价（无锁 vs 有锁、快速路径 vs 慢速路径）
+- 工程应用（理论如何指导实践）
   -> UIKit/Flutter 渲染把状态变化转成一帧
   -> 性能监控把启动、卡顿、内存、包体纳入治理闭环
 ```

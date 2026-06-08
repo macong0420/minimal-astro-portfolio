@@ -208,6 +208,254 @@ mixin 深挖：
 - 多个 mixin 有线性化顺序，后面的成员可能覆盖前面的。
 - mixin 不适合承载强状态和复杂生命周期，否则组合顺序会变成隐性耦合。
 
+---
+
+## 🔬 深度扩展：空安全迁移与late陷阱
+
+### 扩展1：空安全的类型层级
+
+**类型关系：**
+```dart
+Object (所有类型的父类)
+  ├─ Object? (可空顶层)
+  └─ Object (非空)
+      ├─ int
+      ├─ String
+      └─ ...
+
+Null类型只能赋值给T?，不能赋值给T
+```
+
+**null check提升：**
+```dart
+String? name;
+
+if (name != null) {
+  // 这里name被提升为String（非空）
+  print(name.length);  // 无需!
+}
+```
+
+### 扩展2：late的三种用途
+
+**1. 延迟初始化（非空字段）：**
+```dart
+class MyWidget extends StatefulWidget {
+  @override
+  _MyWidgetState createState() => _MyWidgetState();
+}
+
+class _MyWidgetState extends State<MyWidget> {
+  late AnimationController _controller;  // 承诺在initState初始化
+  
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(...);  // 必须赋值
+  }
+}
+```
+
+**2. 懒加载（首次访问初始化）：**
+```dart
+class HeavyResource {
+  late String _data = _loadData();  // 首次访问_data时才执行
+  
+  String _loadData() {
+    print('Loading...');
+    return 'Heavy data';
+  }
+}
+```
+
+**3. 循环引用打破：**
+```dart
+class A {
+  late B b;
+}
+
+class B {
+  late A a;
+}
+
+final a = A();
+final b = B();
+a.b = b;
+b.a = a;
+```
+
+**陷阱：**
+```dart
+late String name;
+
+void use() {
+  print(name);  // 💥 LateInitializationError
+}
+```
+
+### 扩展3：Mixin的线性化顺序
+
+**多Mixin顺序：**
+```dart
+class A {
+  void method() => print('A');
+}
+
+mixin B {
+  void method() => print('B');
+}
+
+mixin C {
+  void method() => print('C');
+}
+
+class D extends A with B, C {}
+
+void main() {
+  D().method();  // 输出：C（最后的mixin优先）
+}
+```
+
+**线性化算法：**
+```text
+D的方法查找顺序：
+D → C → B → A → Object
+
+后面的mixin可以覆盖前面的
+```
+
+### 扩展4：Mixin的on约束
+
+**约束父类型：**
+```dart
+mixin LoggerMixin on StatefulWidget {
+  void log(String msg) {
+    print('[${runtimeType}] $msg');
+  }
+}
+
+class MyWidget extends StatefulWidget with LoggerMixin {
+  // LoggerMixin要求继承StatefulWidget
+}
+```
+
+### 扩展5：泛型的协变与逆变
+
+**协变（covariant）：**
+```dart
+class Animal 
+class Dog extends Animal {}
+
+class Box<T> {
+  void put(T item) {}
+}
+
+Box<Animal> animalBox = Box<Dog>();  // ❌ Dart不支持
+```
+
+**使用covariant关键字：**
+```dart
+class Animal {
+  void chase(covariant Animal x) {}
+}
+
+class Dog extends Animal {
+  @override
+  void chase(covariant Dog x) {}  // 参数类型收窄
+}
+```
+
+### 扩展6：dynamic vs Object vs var
+
+| 类型 | 编译期检查 | 运行时类型 | 使用场景 |
+|------|----------|----------|---------|
+| dynamic | ❌ | 任意 | JSON、Channel、真正不确定类型 |
+| Object | ✅ | 任意 | 需要任意类型但有类型检查 |
+| var | ✅ | 推断 | 类型明确但懒得写 |
+
+**示例：**
+```dart
+dynamic d = 'hello';
+d.foo();  // 编译通过，运行时可能报错
+
+Object o = 'hello';
+o.foo();  // ❌ 编译错误
+
+var v = 'hello';
+v.foo();  // ❌ 编译错误（推断为String，没有foo方法）
+```
+
+### 扩展7：空安全迁移的边界处理
+
+**legacy库调用：**
+```dart
+// 未迁移的库返回String?
+// 但你的代码期望String
+String name = legacyLibrary.getName();  // ❌ 可能为null
+
+// 正确处理
+String? name = legacyLibrary.getName();
+if (name != null) {
+  use(name);
+}
+```
+
+**JSON处理：**
+```dart
+// JSON是dynamic，需要显式检查
+Map<String, dynamic> json = jsonDecode(response);
+
+String? name = json['name'] as String?;  // 可能为null
+int age = json['age'] as int? ?? 0;      // 默认值
+```
+
+### 扩展8：null-aware操作符
+
+**?. (空安全调用)：**
+```dart
+String? name;
+int? length = name?.length;  // name为null时，length也为null
+```
+
+**?? (空值合并)：**
+```dart
+String? name;
+String displayName = name ?? 'Guest';  // name为null时用'Guest'
+```
+
+**??= (空值赋值)：**
+```dart
+String? name;
+name ??= 'Default';  // 只有name为null时才赋值
+```
+
+**! (非空断言)：**
+```dart
+String? name = getName();
+print(name!.length);  // 断言name不为null，否则抛异常
+```
+
+---
+
+## 补充总结
+
+Dart类型系统的深度记忆点：
+
+1. **空安全层级**：Object?顶层、Null只能赋T?
+2. **late用途**：延迟初始化、懒加载、打破循环引用
+3. **late陷阱**：未初始化访问抛LateInitializationError
+4. **Mixin顺序**：线性化，后面的覆盖前面的
+5. **on约束**：限制Mixin的使用场景
+6. **dynamic vs Object**：dynamic无编译检查
+7. **空安全迁移**：legacy库边界、JSON处理
+8. **null-aware**：?.、??、??=、!
+
+面试追问时要能讲出：
+- late的三种用途和陷阱
+- Mixin的线性化顺序（后面覆盖前面）
+- dynamic和Object的区别（编译期检查）
+- 空安全迁移的边界处理（legacy库、JSON）
+
 extension 深挖：
 
 > extension 是静态解析，不是 Runtime 给类加方法。变量静态类型不同，能看到的 extension 也不同；声明成 dynamic 时不会走 extension，而是运行时动态调用，找不到就 `NoSuchMethodError`。

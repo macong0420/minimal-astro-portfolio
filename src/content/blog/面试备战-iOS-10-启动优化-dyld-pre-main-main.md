@@ -247,6 +247,134 @@ main 后启动慢常见原因：
 - 进程开始到 main。
 - main 到 didFinishLaunching。
 - didFinishLaunching 内各 SDK。
+
+---
+
+## 🔬 深度扩展：dyld2 vs dyld3 与启动闭包缓存
+
+启动优化面试最容易被追问的是"dyld3 优化了什么"和"pre-main 各阶段耗时"。要能讲清楚 **dyld2/dyld3 差异、启动闭包、ASLR、二进制重排验证**。
+
+### 扩展1：dyld2 vs dyld3 的核心差异
+
+**dyld2（iOS 13 之前）：**
+```text
+流程：每次启动重复解析依赖、Rebase、Bind
+问题：动态库多时，加载和符号绑定慢
+```
+
+**dyld3（iOS 13+）：**
+```text
+创新：启动闭包（Launch Closure）缓存
+首次启动：分析依赖、计算偏移、生成闭包缓存到 /var/db/dyld/
+后续启动：直接读取闭包，跳过分析
+优化效果：启动时间减少 ~40%
+```
+
+### 扩展2：启动闭包的结构
+
+**启动闭包包含：**
+- 镜像列表（主二进制 + 动态库）
+- 依赖关系（预计算）
+- Rebase/Bind 信息（预处理）
+- ObjC 元数据（selector/class 地址预计算）
+
+**关键优化：**
+1. 依赖关系预计算：不用每次重新解析
+2. Rebase/Bind 数据预处理：减少运行时计算
+3. ObjC 元数据预解析：selector/class 地址预计算
+
+### 扩展3：pre-main 各阶段的耗时分解
+
+**测量方法（Xcode Scheme 添加环境变量）：**
+```text
+DYLD_PRINT_STATISTICS=1
+DYLD_PRINT_STATISTICS_DETAILS=1
+```
+
+**典型输出：**
+```text
+Total pre-main time: 456.78 ms (100.0%)
+  dyld3 closure:  12.34 ms (2.7%)
+  rebase/binding: 78.90 ms (17.3%)
+  ObjC setup:    123.45 ms (27.0%)
+  initializer:   234.56 ms (51.4%)
+```
+
+**各阶段解释：**
+
+| 阶段 | 含义 | 优化方向 |
+|------|------|---------|
+| dyld closure | 生成/读取闭包 | dyld3 自动优化 |
+| rebase/binding | ASLR + 符号绑定 | 减少动态库、合并符号 |
+| ObjC setup | Runtime 初始化 | 减少类/Category 数量 |
+| initializer | +load、C++ 构造 | 延迟初始化、减少 +load |
+
+### 扩展4：二进制重排的验证方法
+
+**Link Map 对比：**
+```bash
+# Build Settings -> Write Link Map File = YES
+# 查看 __TEXT 段函数顺序
+grep "__TEXT" LinkMap.txt | head -50
+```
+
+**Page Fault 统计：**
+```objc
+#import <mach/mach.h>
+struct task_basic_info info;
+task_info(mach_task_self(), TASK_BASIC_INFO, (task_info_t)&info, &count);
+NSLog(@"Page Faults: %d", info.resident_size / 4096);
+```
+
+**典型效果：**
+- 启动时间：减少 5-15%
+- Page Fault：减少 20-40%
+
+### 扩展5：+load 的优化策略
+
+**+load 问题：pre-main 阶段串行执行，阻塞启动**
+
+**优化方案：**
+1. **改用 +initialize**：延迟到类首次使用
+2. **改用 __attribute__((constructor))**：更灵活
+3. **延迟初始化**：App 启动后 dispatch_after
+
+### 扩展6：动态库优化
+
+**问题：动态库过多拖慢启动**
+```text
+每个动态库：dyld 加载 + Rebase + Bind + ObjC Runtime 注册
+100 个动态库 = 100 次重复开销
+```
+
+**优化方案：**
+1. **合并动态库**：多个小库 → 一个大库
+2. **静态链接**：非必须动态的库 → 静态库
+3. **延迟加载**：dlopen 延迟加载
+
+**典型数据：**
+- 系统库：6 个
+- 业务库：< 10 个为佳
+- 超过 20 个：明显影响启动
+
+---
+
+## 补充总结
+
+启动优化的深度记忆点：
+
+1. **dyld3**：启动闭包缓存依赖分析、Rebase/Bind 信息
+2. **pre-main 阶段**：closure → rebase/binding → ObjC setup → initializer
+3. **ASLR**：随机偏移，Rebase 修正指针，触发 COW
+4. **二进制重排**：把启动函数排到连续页，减少 Page Fault
+5. **+load 优化**：改 initialize、constructor、或延迟初始化
+6. **动态库优化**：合并、静态链接、延迟加载
+
+面试追问时要能讲出：
+- dyld3 的核心优化（启动闭包、预计算）
+- pre-main 各阶段的典型耗时占比（initializer 最高 ~50%）
+- 二进制重排的验证方法（Link Map + Page Fault 统计）
+- +load 为什么影响启动（pre-main 串行执行）
 - rootVC 创建。
 - 首页 viewDidLoad。
 - 首页 viewDidAppear。

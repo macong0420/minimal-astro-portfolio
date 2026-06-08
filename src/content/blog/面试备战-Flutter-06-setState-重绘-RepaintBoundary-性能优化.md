@@ -197,6 +197,239 @@ RepaintBoundary 深挖：
 
 面试陷阱：
 
+---
+
+## 🔬 深度扩展：RepaintBoundary与const Widget的实测效果
+
+### 扩展1：RepaintBoundary的使用场景
+
+**何时使用：**
+```dart
+// 1. 频繁动画的局部区域
+RepaintBoundary(
+  child: AnimatedContainer(...),
+)
+
+// 2. 复杂静态内容
+RepaintBoundary(
+  child: ComplexChart(data: data),
+)
+
+// 3. 长列表item
+ListView.builder(
+  itemBuilder: (context, index) {
+    return RepaintBoundary(
+      child: ListTile(...),
+    );
+  },
+)
+```
+
+**验证方法：**
+```dart
+// 打开重绘彩虹
+debugRepaintRainbowEnabled = true;
+
+// 操作UI，观察闪烁范围
+// 加RepaintBoundary后范围应缩小
+```
+
+### 扩展2：const Widget的优化原理
+
+**const的作用：**
+```dart
+// ❌ 每次build都创建新对象
+Widget build(BuildContext context) {
+  return Container(
+    child: Text('Hello'),
+  );
+}
+
+// ✅ const对象复用，跳过diff
+Widget build(BuildContext context) {
+  return const Container(
+    child: Text('Hello'),
+  );
+}
+```
+
+**Widget.canUpdate检查：**
+```dart
+static bool canUpdate(Widget oldWidget, Widget newWidget) {
+  return oldWidget.runtimeType == newWidget.runtimeType
+      && oldWidget.key == newWidget.key;
+}
+
+// const Widget：oldWidget == newWidget（引用相同）
+// → 直接复用Element，不调用update
+```
+
+### 扩展3：setState的最小化范围
+
+**状态下沉：**
+```dart
+// ❌ 差：整个页面rebuild
+class MyPage extends StatefulWidget {
+  @override
+  _MyPageState createState() => _MyPageState();
+}
+
+class _MyPageState extends State<MyPage> {
+  int counter = 0;
+  
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Header(),
+        Text('$counter'),
+        Button(onPressed: () => setState(() => counter++)),
+        Footer(),
+      ],
+    );
+  }
+}
+
+// ✅ 好：只rebuild计数器部分
+class MyPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Header(),
+        CounterWidget(),  // 状态在这里
+        Footer(),
+      ],
+    );
+  }
+}
+```
+
+### 扩展4：ValueListenableBuilder的优化
+
+**问题：**
+```dart
+// Provider包含多个字段，任一变化都rebuild全部
+final user = context.watch<UserModel>();
+return Column(
+  children: [
+    Text(user.name),
+    Text(user.email),
+    Avatar(user.avatar),
+  ],
+);
+```
+
+**优化：**
+```dart
+// 只监听需要的字段
+ValueListenableBuilder<String>(
+  valueListenable: userNameNotifier,
+  builder: (context, name, child) {
+    return Text(name);
+  },
+)
+```
+
+### 扩展5：shouldRebuild的细粒度控制
+
+**自定义InheritedWidget：**
+```dart
+class MyInheritedWidget extends InheritedWidget {
+  final int counter;
+  final String name;
+  
+  @override
+  bool updateShouldNotify(MyInheritedWidget oldWidget) {
+    // 只有counter变化才通知
+    return oldWidget.counter != counter;
+  }
+}
+```
+
+### 扩展6：DevTools性能分析
+
+**Timeline视图：**
+```text
+1. 打开DevTools → Performance
+2. 录制操作
+3. 查看UI/Raster线程柱状图
+4. 定位超过16.67ms的帧
+5. 展开查看具体函数耗时
+```
+
+**关键指标：**
+- UI线程高：Build/Layout问题
+- Raster线程高：Paint/图片解码问题
+- 都不高但掉帧：可能是Platform Channel耗时
+
+### 扩展7：常见性能陷阱
+
+**1. build中创建对象：**
+```dart
+// ❌ 每次build都创建
+Widget build(BuildContext context) {
+  final controller = TextEditingController();
+  return TextField(controller: controller);
+}
+
+// ✅ 在initState创建
+TextEditingController? _controller;
+@override
+void initState() {
+  super.initState();
+  _controller = TextEditingController();
+}
+```
+
+**2. ListView不用builder：**
+```dart
+// ❌ 一次性创建所有item
+ListView(
+  children: List.generate(10000, (i) => ListTile(...)),
+)
+
+// ✅ 按需创建
+ListView.builder(
+  itemCount: 10000,
+  itemBuilder: (context, index) => ListTile(...),
+)
+```
+
+**3. 过度使用Opacity：**
+```dart
+// ❌ Opacity会触发saveLayer（昂贵）
+Opacity(
+  opacity: 0.5,
+  child: complexWidget,
+)
+
+// ✅ 直接设置透明度
+Container(
+  color: Colors.red.withOpacity(0.5),
+)
+```
+
+---
+
+## 补充总结
+
+Flutter性能优化的深度记忆点：
+
+1. **RepaintBoundary**：隔离paint传播，用于频繁动画、复杂静态、列表item
+2. **const Widget**：对象复用，跳过Widget.canUpdate检查
+3. **状态下沉**：让setState影响范围最小化
+4. **ValueListenableBuilder**：监听单个字段，避免整体rebuild
+5. **shouldRebuild**：自定义通知条件，细粒度控制
+6. **DevTools**：UI/Raster线程定位瓶颈
+7. **性能陷阱**：build创建对象、ListView不用builder、过度Opacity
+
+面试追问时要能讲出：
+- RepaintBoundary的验证方法（debugRepaintRainbowEnabled）
+- const Widget的优化原理（对象复用，跳过diff）
+- setState的最小化策略（状态下沉、拆分Widget）
+- DevTools的使用方法（Timeline视图，UI/Raster线程分析）
+
 - “rebuild 很慢”不一定成立，Flutter 的 build 通常相对便宜。
 - 真正贵的可能是 layout、图片解码、raster 或平台通道。
 - `setState` after dispose 是生命周期错误，不是性能问题。

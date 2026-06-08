@@ -168,6 +168,125 @@ Hot Reload 注入新代码后会触发 `reassemble`，整棵 Widget 树重新 bu
 
 不能。它主要针对可静态分析的代码和部分字体图标，资源和 Native 依赖要单独治理。
 
+---
+
+## 🔬 深度扩展：AOT编译产物与Tree Shaking原理
+
+### 扩展1：JIT vs AOT编译流程
+
+**JIT（Debug模式）：**
+```text
+Dart源码 → Kernel字节码 → Dart VM解释/JIT编译 → 机器码
+```
+
+**AOT（Release模式）：**
+```text
+Dart源码 → Kernel字节码 → AOT编译器 → app.so/App.framework
+```
+
+### 扩展2：AOT产物结构
+
+**iOS产物：**
+```text
+App.framework/
+  ├─ App（机器码）
+  ├─ Info.plist
+  └─ flutter_assets/
+```
+
+**Android产物：**
+```text
+lib/
+  ├─ arm64-v8a/
+  │   └─ libapp.so
+  └─ armeabi-v7a/
+      └─ libapp.so
+```
+
+### 扩展3：Tree Shaking工作原理
+
+**静态分析：**
+```dart
+// 未使用的类
+class UnusedClass {
+  void method() {}
+}
+
+// Tree Shaking会移除
+```
+
+**限制：**
+```dart
+// 反射、动态调用无法分析
+String className = 'MyClass';
+Type type = reflector.findType(className);
+// Tree Shaking无法识别MyClass被使用
+```
+
+### 扩展4：Hot Reload的reassemble机制
+
+**触发流程：**
+```text
+1. 代码改动
+2. 增量编译
+3. Isolate加载新代码
+4. 调用WidgetsBinding.reassemble()
+5. 触发所有Element.reassemble()
+6. 触发所有State.reassemble()
+7. 标记dirty，下一帧rebuild
+```
+
+**状态保留：**
+- Element/State实例按canUpdate复用
+- 成员变量值保留
+- initState不重新执行
+
+### 扩展5：编译产物大小优化
+
+**--split-debug-info：**
+```bash
+flutter build ios --release --split-debug-info=./debug-info
+```
+
+**效果：**
+- 分离符号表
+- 减少30-40%包体
+- 保留崩溃堆栈还原能力
+
+### 扩展6：首帧优化策略
+
+**问题：**
+```text
+首次打开Flutter页面慢
+- Engine初始化
+- Dart VM启动
+- 资源加载
+- Shader编译（Skia）
+```
+
+**优化：**
+1. **Engine预热**：启动时创建Engine
+2. **SkSL预热**：--bundle-sksl-path（Skia时代）
+3. **Impeller**：离线Shader编译，消除jank
+
+---
+
+## 补充总结
+
+编译构建的深度记忆点：
+
+1. **JIT vs AOT**：JIT支持热重载、AOT性能更好
+2. **AOT产物**：iOS为App.framework、Android为libapp.so
+3. **Tree Shaking**：静态分析移除未使用代码
+4. **Hot Reload**：reassemble触发rebuild、状态保留
+5. **包体优化**：split-debug-info分离符号表
+6. **首帧优化**：Engine预热、Shader预编译
+
+面试追问时要能讲出：
+- JIT和AOT的编译流程差异
+- Hot Reload的reassemble机制
+- Tree Shaking的限制（反射、动态调用）
+
 ## 项目回答模板
 
 > Flutter 性能验证我会用 Profile 或 Release，不用 Debug 感受下结论。包体治理会拆 Dart 代码、Native 插件、图片、字体、动态库几个维度，Tree Shaking 只是其中一环。

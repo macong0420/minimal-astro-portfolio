@@ -248,6 +248,170 @@ RunLoop Observer 记录主线程状态，后台线程检测超时，超时抓主
 
 包体题不要只说删除图片：
 
+---
+
+## 🔬 深度扩展：卡顿监控的完整方案与FPS误区
+
+### 扩展1：主线程卡顿监控实现
+
+**核心原理：**监控 RunLoop 在 BeforeSources/AfterWaiting 停留时间
+
+```objc
+CFRunLoopObserverRef observer = CFRunLoopObserverCreate(
+    kCFAllocatorDefault,
+    kCFRunLoopAllActivities,
+    YES,
+    0,
+    &runLoopObserverCallBack,
+    &context
+);
+
+static void runLoopObserverCallBack(CFRunLoopObserverRef observer,
+                                    CFRunLoopActivity activity,
+                                    void *info) {
+    currentActivity = activity;
+    dispatch_semaphore_signal(semaphore);
+}
+
+// 监控线程
+dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 50 * NSEC_PER_MSEC));
+if (timeout && (activity == kCFRunLoopBeforeSources || activity == kCFRunLoopAfterWaiting)) {
+    timeoutCount++;
+    if (timeoutCount >= 3) {
+        // 抓取堆栈上报
+    }
+}
+```
+
+**关键点：**
+- 双线程配合（主线程记录状态、监控线程检测超时）
+- 连续超时才确认卡顿（避免误报）
+- 只监控 BeforeSources/AfterWaiting（真正干活的阶段）
+
+### 扩展2：FPS 监控的误区
+
+**FPS ≠ 卡顿：**
+- FPS 统计显示刷新率，但不能定位原因
+- 主线程空闲但 GPU 慢，FPS 低但 RunLoop 监控不到
+- 推荐组合：RunLoop 监控（CPU）+ FPS（GPU）
+
+**CADisplayLink 统计FPS：**
+```objc
+self.displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(tick:)];
+[self.displayLink addToRunLoop:[NSRunLoop mainRunLoop] forMode:NSRunLoopCommonModes];
+
+- (void)tick:(CADisplayLink *)link {
+    _count++;
+    NSTimeInterval delta = link.timestamp - _lastTime;
+    if (delta >= 1.0) {
+        _fps = _count / delta;
+        _count = 0;
+        _lastTime = link.timestamp;
+    }
+}
+```
+
+### 扩展3：Instruments Time Profiler 使用
+
+**核心步骤：**
+1. 录制卡顿场景
+2. 选择 Call Tree 视图
+3. 勾选：Separate by Thread、Hide System Libraries、Invert Call Tree
+4. 按 Self Weight 排序，找出耗时函数
+
+**关键配置：**
+- Separate by Thread：分线程统计
+- Hide System Libraries：隐藏系统库
+- Invert Call Tree：从叶子节点看，快速定位热点
+
+### 扩展4：内存泄漏排查三板斧
+
+**1. Xcode Memory Graph**
+- 运行时点击 Debug Memory Graph
+- 查看对象引用链
+- 找循环引用
+
+**2. Instruments Leaks**
+- 检测真正泄漏的对象（无法访问但未释放）
+- 局限：无法检测循环引用（可访问但不应该持有）
+
+**3. MLeaksFinder（美团开源）**
+- 自动检测 ViewController/View 未释放
+- pop/dismiss 后延迟检查是否 dealloc
+
+### 扩展5：内存峰值优化
+
+**大图解码：**
+```objc
+// ❌ 差：UIImage 解码在主线程
+UIImage *image = [UIImage imageNamed:@"large.jpg"];
+self.imageView.image = image;
+
+// ✅ 好：子线程解码
+dispatch_async(queue, ^{
+    UIImage *image = [UIImage imageWithContentsOfFile:path];
+    // 强制解码
+    UIGraphicsBeginImageContext(CGSizeMake(1, 1));
+    [image drawAtPoint:CGPointZero];
+    UIImage *decoded = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+        self.imageView.image = decoded;
+    });
+});
+```
+
+**AutoreleasePool 降峰：**
+```objc
+for (int i = 0; i < 100000; i++) {
+    @autoreleasepool {
+        NSString *str = [NSString stringWithFormat:@"%d", i];
+        // 处理
+    }
+}
+```
+
+### 扩展6：包体优化的量化分析
+
+**App Thinning：**
+- Bitcode（已废弃）
+- On-Demand Resources
+- App Slicing（按设备架构）
+
+**Link Map 分析：**
+```bash
+# 生成 Link Map
+# Build Settings -> Write Link Map File = YES
+
+# 分析符号大小
+grep -E "0x[0-9a-f]+" LinkMap.txt | awk '{print $2, $3}' | sort -rn | head -20
+```
+
+**典型优化：**
+- 图片：WebP、压缩、删除未使用
+- 资源：按需下载、动态配置
+- 代码：删除无用类/方法、合并重复代码
+
+---
+
+## 补充总结
+
+性能优化的深度记忆点：
+
+1. **卡顿监控**：RunLoop + 信号量超时检测，连续3次确认
+2. **FPS 误区**：FPS 低不等于主线程卡顿，需组合监控
+3. **Time Profiler**：Invert Call Tree + Self Weight 快速定位热点
+4. **内存泄漏**：Memory Graph（循环引用）+ Leaks（真泄漏）
+5. **内存峰值**：大图解码、AutoreleasePool、批量处理
+6. **包体优化**：Link Map 分析、图片压缩、按需下载
+
+面试追问时要能讲出：
+- RunLoop 监控的实现原理（双线程+信号量）
+- FPS 和卡顿的区别（FPS 是结果，不是原因）
+- Instruments 的关键配置（Invert Call Tree）
+- 内存泄漏和峰值的区别（泄漏不释放，峰值短时高）
+
 - LinkMap 找代码贡献。
 - `nm`/`otool` 看符号和动态库。
 - 资源去重、WebP/HEIF、按需下载。

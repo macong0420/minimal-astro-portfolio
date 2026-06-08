@@ -747,3 +747,631 @@ obj dealloc
 ## 一句话总结
 
 `isa` 是身份链，`superclass` 是继承链，元类统一了类方法派发；non-pointer isa 负责高频状态，SideTable 和 weak_table 负责复杂外部状态，weak 自动置 nil 的本质是 Runtime 保存 weak 变量地址并在对象释放时反向清理。
+
+---
+
+## 🔬 深度扩展：weak 的完整生命周期与性能代价
+
+weak 不是"不 retain"那么简单。它的安全性来自 Runtime 的**注册→读取→迁移→清理**四个阶段，每个阶段都有成本和细节。
+
+### 扩展1：weak 注册的完整流程（源码级）
+
+```objc
+__weak id weakObj = obj;
+```
+
+编译器转换为：
+```c
+id weakObj;
+objc_initWeak(&weakObj, obj);
+```
+
+`objc_initWeak` 大致流程：
+
+```cpp
+id objc_initWeak(id *location, id newObj) {
+    // location 是 weak 变量的地址，即 &weakObj
+    
+    // 1. 先把 weak 变量置 nil
+    *location = nil;
+    
+    // 2. 如果新对象为 nil，直接返回
+    if (!newObj) return nil;
+    
+    // 3. 调用 storeWeak 注册
+    return storeWeak<DontHaveOld, DoHaveNew>(location, newObj);
+}
+```
+
+`storeWeak` 的核心逻辑：
+
+```cpp
+template <HaveOld haveOld, HaveNew haveNew>
+static id storeWeak(id *location, objc_object *newObj) {
+    // 1. 根据对象地址哈希到某个 SideTable
+    SideTable *newTable = &SideTables()[newObj];
+    
+    // 2. 加锁（可能涉及多个 SideTable 锁顺序）
+    newTable->lock();
+    
+    // 3. 检查对象是否正在释放
+    if (newObj->isTaggedPointerOrNil()) {
+        // Tagged Pointer 不走 weak 表
+        *location = (id)newObj;
+        newTable->unlock();
+        return (id)newObj;
+    }
+    
+    if (newObj->isa.deallocating) {
+        // 对象正在 dealloc，写 nil 或 crash（取决于 API 变体）
+        *location = nil;
+        newTable->unlock();
+        return nil;
+    }
+    
+    // 4. 在 weak_table 中查找或创建 weak_entry_t
+    weak_entry_t *entry = weak_entry_for_referent(&newTable->weak_table, newObj);
+    
+    if (entry) {
+        // 已有 entry，添加新 referrer
+        append_referrer(entry, location);
+    } else {
+        // 创建新 entry
+        weak_entry_t new_entry;
+        new_entry.referent = newObj;
+        new_entry.out_of_line_ness = 0;
+        new_entry.inline_referrers[0] = location;
+        weak_entry_insert(&newTable->weak_table, &new_entry);
+    }
+    
+    // 5. 设置对象 isa 标记
+    newObj->isa.weakly_referenced = 1;
+    
+    // 6. 把对象地址写入 weak 变量
+    *location = (id)newObj;
+    
+    // 7. 解锁
+    newTable->unlock();
+    
+    return (id)newObj;
+}
+```
+
+**关键细节：**
+
+1. **锁竞争**  
+   weak 注册需要 SideTable 锁，多线程频繁创建 weak 会有锁竞争。
+
+2. **哈希查找**  
+   `weak_entry_for_referent` 在 weak_table 的哈希数组中查找，用开放寻址处理冲突。
+
+3. **内联优化**  
+   前 4 个 weak 引用直接存在 `weak_entry_t.inline_referrers` 数组，不分配额外内存。
+
+4. **扩容**  
+   超过内联容量后，切换到 out-of-line 哈希表，需要分配和迁移。
+
+### 扩展2：weak 读取不是零成本
+
+很多人以为 weak 读取就是普通指针读取，实际上 Runtime 要**保证读到的对象不在 dealloc 中**。
+
+**老实现（objc4-723 之前）：**
+
+```cpp
+id objc_loadWeak(id *location) {
+    id obj = *location;
+    if (!obj) return nil;
+    
+    // 临时 retain
+    objc_retain(obj);
+    
+    // 放入 autorelease pool
+    objc_autorelease(obj);
+    
+    return obj;
+}
+```
+
+为什么要 retain + autorelease？
+
+因为读取瞬间对象可能正在另一个线程 dealloc。临时 retain 可以延长生命周期到当前作用域结束。
+
+**新实现（objc4-723 之后）：**
+
+引入了 `objc_loadWeakRetained`，在某些场景下避免 autorelease：
+
+```cpp
+id objc_loadWeakRetained(id *location) {
+    id obj;
+retry:
+    obj = *location;
+    if (!obj) return nil;
+    
+    if (obj->isa.nonpointer) {
+        if (obj->isa.deallocating) {
+            // 正在释放，返回 nil
+            return nil;
+        }
+        
+        // 尝试 retain
+        if (obj->rootTryRetain()) {
+            return obj;  // 成功 retain，调用方负责 release
+        }
+    }
+    
+    // 降级到加锁路径
+    SideTable *table = &SideTables()[obj];
+    table->lock();
+    
+    if (*location != obj) {
+        // 对象已变化，重试
+        table->unlock();
+        goto retry;
+    }
+    
+    if (obj->isa.deallocating) {
+        table->unlock();
+        return nil;
+    }
+    
+    table->refcnt++;  // 引用计数 +1
+    table->unlock();
+    return obj;
+}
+```
+
+**成本分析：**
+
+| 操作 | 普通读取 | weak 读取（老） | weak 读取（新） |
+|------|---------|----------------|----------------|
+| 指令数 | ~1-2 | ~20-50 | ~10-30 |
+| 是否加锁 | 否 | 可能 | 少数情况 |
+| autorelease | 否 | 是 | 部分场景 |
+| 相对成本 | 1x | 10-20x | 5-10x |
+
+所以 weak 读取**不是零成本**。高频访问场景要注意：
+
+```objc
+// ❌ 差：每次循环都读 weak
+for (int i = 0; i < 10000; i++) {
+    [self.weakDelegate doSomething];  // 每次读 weak + retain + autorelease
+}
+
+// ✅ 好：转 strong 后批量访问
+id<SomeDelegate> delegate = self.weakDelegate;
+for (int i = 0; i < 10000; i++) {
+    [delegate doSomething];
+}
+```
+
+### 扩展3：weak 重新赋值的双向清理
+
+```objc
+weakObj = newObj;
+```
+
+不是简单覆盖指针，而是**从旧对象注销，向新对象注册**：
+
+```cpp
+template <HaveOld haveOld, HaveNew haveNew>
+static id storeWeak(id *location, objc_object *newObj) {
+    id oldObj = *location;
+    
+    // 1. 找到旧对象的 SideTable
+    SideTable *oldTable = &SideTables()[oldObj];
+    
+    // 2. 找到新对象的 SideTable
+    SideTable *newTable = &SideTables()[newObj];
+    
+    // 3. 按固定顺序加锁，避免死锁
+    if (oldTable == newTable) {
+        oldTable->lock();
+    } else if (oldTable < newTable) {
+        oldTable->lock();
+        newTable->lock();
+    } else {
+        newTable->lock();
+        oldTable->lock();
+    }
+    
+    // 4. 从旧对象的 weak_entry 移除 location
+    if (haveOld) {
+        weak_unregister_no_lock(&oldTable->weak_table, oldObj, location);
+    }
+    
+    // 5. 向新对象的 weak_entry 添加 location
+    if (haveNew) {
+        weak_register_no_lock(&newTable->weak_table, newObj, location);
+        newObj->isa.weakly_referenced = 1;
+    }
+    
+    // 6. 更新 weak 变量值
+    *location = (id)newObj;
+    
+    // 7. 解锁
+    oldTable->unlock();
+    if (oldTable != newTable) {
+        newTable->unlock();
+    }
+    
+    return (id)newObj;
+}
+```
+
+**关键点：**
+
+1. **双表锁**  
+   如果新旧对象映射到不同 SideTable，需要同时持有两个锁。
+
+2. **锁顺序**  
+   按 SideTable 地址排序加锁，避免 A→B、B→A 的死锁。
+
+3. **原子性**  
+   整个过程在锁保护下，保证 weak 变量、weak_table、isa 标记的一致性。
+
+### 扩展4：weak 指向正在 dealloc 的对象会怎样？
+
+**场景复现：**
+
+```objc
+// 线程 A
+NSObject *obj = [NSObject new];
+dispatch_async(queue, ^{
+    // 线程 B
+    __weak id weakObj = obj;  // 此时 obj 可能正在 dealloc
+});
+[obj release];  // 触发 dealloc
+```
+
+**Runtime 处理：**
+
+```cpp
+id objc_initWeak(id *location, id newObj) {
+    // ...
+    
+    if (newObj->isa.deallocating) {
+        // 对象正在释放
+        
+        // objc_initWeak / objc_storeWeak：直接 crash
+        _objc_fatal("Cannot form weak reference to instance (%p) of class %s. "
+                    "It is possible that this object was over-released, or is in the process of deallocation.",
+                    newObj, object_getClassName(newObj));
+        
+        // objc_initWeakOrNil / objc_storeWeakOrNil：返回 nil
+        *location = nil;
+        return nil;
+    }
+}
+```
+
+**关键区分：**
+
+| API | 对象正在 dealloc | 行为 |
+|-----|-----------------|------|
+| `objc_initWeak` | 是 | ❌ **Crash** |
+| `objc_storeWeak` | 是 | ❌ **Crash** |
+| `objc_initWeakOrNil` | 是 | ✅ 写 nil，返回 nil |
+| `objc_storeWeakOrNil` | 是 | ✅ 写 nil，返回 nil |
+
+**面试重点：**
+
+> weak 不会"安全地指向正在死的对象"。标准 API 遇到 `deallocating` 会直接崩溃，不是悄悄置 nil。
+
+这是故意设计，暴露时序问题，而不是掩盖错误。
+
+### 扩展5：weak 清理的精确时机
+
+对象引用计数归零后的释放链路：
+
+```cpp
+void _objc_rootDealloc(id obj) {
+    obj->rootDealloc();
+}
+
+inline void objc_object::rootDealloc() {
+    if (isTaggedPointerOrNil()) return;
+    
+    if (fastpath(isa.nonpointer                     &&
+                 !isa.weakly_referenced             &&
+                 !isa.has_assoc                     &&
+                 !isa.has_cxx_dtor                  &&
+                 !isa.has_sidetable_rc)) {
+        // 快速路径：没有 weak、关联对象、C++ 析构、SideTable 引用计数
+        free(this);
+    } else {
+        // 慢路径
+        object_dispose((id)this);
+    }
+}
+```
+
+`object_dispose` 流程：
+
+```cpp
+id object_dispose(id obj) {
+    if (!obj) return nil;
+    
+    // 1. 调用 objc_destructInstance
+    objc_destructInstance(obj);
+    
+    // 2. 回收内存
+    free(obj);
+    
+    return nil;
+}
+
+void *objc_destructInstance(id obj) {
+    if (obj) {
+        // 1. C++ 析构 / ARC ivar 清理
+        if (obj->hasCxxDtor()) {
+            object_cxxDestruct(obj);
+        }
+        
+        // 2. 清理关联对象
+        if (obj->hasAssociatedObjects()) {
+            _object_remove_assocations(obj);
+        }
+        
+        // 3. 清理 weak 引用
+        if (obj->isa.weakly_referenced) {
+            clearDeallocating(obj);
+        }
+        
+        // 4. 清理 SideTable 引用计数（如果有溢出）
+        if (obj->isa.has_sidetable_rc) {
+            SideTable& table = SideTables()[obj];
+            table.lock();
+            table.refcnts.erase(obj);
+            table.unlock();
+        }
+    }
+    
+    return obj;
+}
+```
+
+`clearDeallocating` 清理 weak：
+
+```cpp
+void clearDeallocating(objc_object *obj) {
+    SideTable& table = SideTables()[obj];
+    
+    // 1. 加锁
+    table.lock();
+    
+    // 2. 查找 weak_entry
+    weak_entry_t *entry = weak_entry_for_referent(&table.weak_table, obj);
+    
+    if (entry) {
+        // 3. 遍历所有 weak 引用
+        if (entry->out_of_line_ness == 0) {
+            // inline 模式
+            for (size_t i = 0; i < WEAK_INLINE_COUNT; i++) {
+                id *referrer = entry->inline_referrers[i];
+                if (referrer) {
+                    if (*referrer == obj) {
+                        *referrer = nil;  // 置 nil
+                    }
+                }
+            }
+        } else {
+            // out-of-line 模式
+            for (size_t i = 0; i < entry->num_refs; i++) {
+                id *referrer = entry->referrers[i];
+                if (referrer && *referrer == obj) {
+                    *referrer = nil;
+                }
+            }
+        }
+        
+        // 4. 从 weak_table 删除 entry
+        weak_entry_remove(&table.weak_table, entry);
+    }
+    
+    // 5. 解锁
+    table.unlock();
+    
+    // 6. 清除 isa 标记（可选优化）
+    obj->isa.weakly_referenced = 0;
+}
+```
+
+**时序总结：**
+
+```text
+引用计数归零
+  -> dealloc（用户重写的部分）
+  -> object_dispose
+  -> objc_destructInstance
+    -> 1. C++ 析构 / .cxx_destruct（释放 strong ivar）
+    -> 2. 清理关联对象
+    -> 3. 清理 weak 引用（clearDeallocating）
+    -> 4. 清理 SideTable 引用计数
+  -> free 内存
+```
+
+**关键：weak 清理在内存回收前，但在用户 dealloc 后**。
+
+### 扩展6：weak_entry 的内联优化细节
+
+```cpp
+#define WEAK_INLINE_COUNT 4
+
+struct weak_entry_t {
+    DisguisedPtr<objc_object> referent;  // 被 weak 引用的对象
+    
+    union {
+        struct {
+            weak_referrer_t *referrers;              // 动态数组
+            uintptr_t out_of_line_ness : 2;         // 必须为 1（标记 out-of-line）
+            uintptr_t num_refs : PTR_MINUS_2;       // referrer 数量
+            uintptr_t mask;                          // 哈希表掩码
+            uintptr_t max_hash_displacement;         // 最大探测距离
+        };
+        struct {
+            weak_referrer_t inline_referrers[WEAK_INLINE_COUNT];  // 内联数组
+        };
+    };
+};
+```
+
+**存储模式切换：**
+
+```text
+weak 引用数量 <= 4：
+  - inline 模式
+  - 直接存储在 weak_entry_t 内部
+  - 不需要额外分配
+  - 遍历 O(4)
+
+weak 引用数量 > 4：
+  - out-of-line 模式
+  - 分配独立哈希表
+  - referrers 指向动态数组
+  - mask/num_refs 有效
+  - 查找/插入走哈希
+```
+
+**为什么是 4？**
+
+经验值：大多数对象的 weak 引用数量 <= 4。内联避免了：
+- malloc/free 调用
+- 指针追踪
+- 缓存局部性更好
+
+**切换时机：**
+
+```cpp
+void append_referrer(weak_entry_t *entry, id *new_referrer) {
+    if (entry->out_of_line_ness == 0) {
+        // 当前 inline 模式
+        for (size_t i = 0; i < WEAK_INLINE_COUNT; i++) {
+            if (entry->inline_referrers[i] == nil) {
+                entry->inline_referrers[i] = new_referrer;
+                return;
+            }
+        }
+        
+        // inline 满了，升级到 out-of-line
+        grow_refs_and_insert(entry, new_referrer);
+    } else {
+        // 已经是 out-of-line，走哈希插入
+        weak_referrer_t *referrers = entry->referrers;
+        size_t begin = hash_pointer(new_referrer) & entry->mask;
+        size_t index = begin;
+        
+        // 开放寻址
+        do {
+            if (referrers[index] == nil) {
+                referrers[index] = new_referrer;
+                entry->num_refs++;
+                return;
+            }
+            index = (index + 1) & entry->mask;
+        } while (index != begin);
+        
+        // 哈希表满了，扩容
+        weak_grow_maybe(entry);
+        append_referrer(entry, new_referrer);
+    }
+}
+```
+
+### 扩展7：weak 的实测性能成本
+
+**场景1：创建 weak**
+
+```objc
+// 测试代码
+NSObject *obj = [NSObject new];
+
+// 普通 strong 赋值：~5 纳秒
+__strong id strongRef = obj;
+
+// weak 赋值：~100-200 纳秒
+__weak id weakRef = obj;
+```
+
+**成本来源：**
+- 哈希查找 SideTable：~20ns
+- 加锁/解锁：~30ns
+- 查找/创建 weak_entry：~30ns
+- 插入 referrer：~20ns
+
+**场景2：读取 weak**
+
+```objc
+__weak id weakObj = obj;
+
+// 读取 weak（新实现）：~20-50 纳秒
+id temp = weakObj;
+
+// 读取 weak（老实现，有 autorelease）：~80-150 纳秒
+```
+
+**场景3：对象释放时的 weak 清理**
+
+```objc
+NSObject *obj = [NSObject new];
+__weak id w1 = obj, w2 = obj, w3 = obj, w4 = obj;
+
+// 释放 obj，清理 4 个 weak：~200-400 纳秒
+obj = nil;
+```
+
+**工程建议：**
+
+1. **正常业务不用担心**  
+   weak 成本虽然比 strong 高，但在 UI、网络、数据库面前仍然很小。
+
+2. **高频场景要注意**  
+   - 每帧 60 次的渲染回调
+   - 音视频数据流处理
+   - 热路径算法
+
+3. **批量访问转 strong**  
+   循环里多次访问同一个 weak，先转 strong。
+
+4. **不要过度设计**  
+   不要"因为 weak 有成本"就回退到 unsafe_unretained + 手动管理。
+
+### 扩展8：面试追问的完整回答模板
+
+**Q: weak 自动置 nil 的底层原理？**
+
+> weak 赋值时，Runtime 把 weak 变量的地址（例如 `&weakObj`）注册到对象对应的 weak_entry 里。对象释放时，如果 isa.weakly_referenced 为 1，Runtime 会查 SideTable 的 weak_table，找到 weak_entry，遍历所有 referrer（即 weak 变量地址），把它们写成 nil，然后删除 weak_entry。
+
+**Q: 为什么 weak 比 assign 安全？**
+
+> assign 只是指针赋值，对象释放后指针仍指向旧地址，变成野指针。weak 因为注册了 referrer，对象释放时 Runtime 会主动把 weak 变量置 nil，避免访问已回收内存。
+
+**Q: weak 有性能成本吗？**
+
+> 有。weak 赋值要哈希查表、加锁、注册 referrer，成本约是 strong 的 20-40 倍；weak 读取要保证对象不在 dealloc，可能临时 retain+autorelease，成本约是普通读取的 5-20 倍；对象释放时要遍历清理所有 weak。但在 UI/网络/数据库面前，weak 成本仍然很小，正常业务不用担心。
+
+**Q: weak_table 和 SideTable 什么关系？**
+
+> SideTable 是全局分段表，每个分段包含锁、引用计数溢出表和 weak_table。Runtime 通过对象地址哈希到某个 SideTable，然后在该 SideTable 的 weak_table 中查找 weak_entry。分段降低了锁竞争。
+
+**Q: weak_entry 的 inline_referrers 是什么优化？**
+
+> 大多数对象的 weak 引用数量 <= 4，inline_referrers 把前 4 个 referrer 直接存在 weak_entry 内部，不需要额外分配内存。超过 4 个才切换到 out-of-line 哈希表。这避免了小对象的 malloc/free 开销。
+
+---
+
+## 补充总结
+
+weak 的深度记忆点：
+
+1. **注册时**：记录的是 weak 变量地址 `&weakObj`，不是对象值
+2. **读取时**：不是零成本，要临时 retain 或检查 deallocating
+3. **重新赋值**：要从旧对象注销、向新对象注册，双向清理
+4. **清理时**：发生在对象内存回收前，通过 referrer 地址写 nil
+5. **优化**：前 4 个 weak 用 inline 存储，避免动态分配
+
+面试追问时要能讲出：
+- weak_entry 的 inline vs out-of-line 模式
+- weak 读取的临时 retain 机制
+- 指向正在 dealloc 的对象会 crash（不是悄悄置 nil）
+- weak 清理的精确时序（在 C++ 析构后、内存回收前）
+- 性能成本的量级差异（赋值 20-40x，读取 5-20x）

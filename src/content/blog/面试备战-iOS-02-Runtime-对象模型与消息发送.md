@@ -602,3 +602,490 @@ Runtime 能力强，但不能在业务层滥用。合理使用场景通常在基
 ## 一句话总结
 
 Runtime 的主线就是：实例对象通过 isa 找类，类用 cache 加速 selector 到 IMP 的映射，cache miss 后查方法列表和父类链，最后才进入消息转发补救。
+
+---
+
+## 🔬 深度扩展：消息转发要讲到工程陷阱
+
+消息转发是面试中最容易被"继续追问"的点。只背三个方法名不够，要能讲清楚**每个阶段的使用场景、性能代价、相互关系和工程陷阱**。
+
+### 扩展1：动态方法解析的正确理解
+
+很多人以为 `resolveInstanceMethod:` 只是"补一个方法"，但它的语义是**给类永久添加方法**。
+
+**核心流程（伪代码）：**
+
+```text
+lookUpImpOrForward 找不到方法
+  -> 第一次进入动态解析
+  -> 调用 +resolveInstanceMethod: / +resolveClassMethod:
+  -> 如果返回 YES，重新走一次 lookUpImpOrForward
+  -> 这次可能命中刚添加的方法，进入 cache
+  -> 如果仍未找到，进入转发
+```
+
+**关键点：**
+
+1. **只调用一次**  
+   `resolveInstanceMethod:` 对同一个 selector 只会调用一次。如果你返回 YES 但没真正添加方法，第二次查找失败就直接进转发，不会再给你机会。
+
+2. **方法会进入类的方法列表**  
+   用 `class_addMethod` 添加的方法是**永久的**，不是"只为本次调用临时补"。后续所有该类实例调用这个方法都会命中。
+
+3. **实例方法 vs 类方法的陷阱**  
+   ```objc
+   // 错误写法：实例方法解析里加到类对象
+   + (BOOL)resolveInstanceMethod:(SEL)sel {
+       class_addMethod(self, sel, (IMP)dynamicMethod, "v@:");
+       return YES;
+   }
+   
+   // 类方法解析要加到元类
+   + (BOOL)resolveClassMethod:(SEL)sel {
+       Class metaClass = object_getClass(self);  // 注意这里
+       class_addMethod(metaClass, sel, (IMP)dynamicClassMethod, "v@:");
+       return YES;
+   }
+   ```
+
+**适用场景：**
+- Core Data 的 `@dynamic` 属性
+- JSON 模型的动态属性访问
+- DSL/脚本桥接按规则生成方法
+- 基础设施需要为一类方法补通用实现
+
+**不适合：**
+- 只想把本次调用转发给另一个对象 → 用快速转发
+- 想要修改调用参数或多播 → 用完整转发
+- 想要运行时决定是否响应 → 污染类能力边界
+
+### 扩展2：快速转发的限制和正确用法
+
+`forwardingTargetForSelector:` 看起来像简单代理，但有**硬限制**：
+
+**核心限制：**
+
+```objc
+- (id)forwardingTargetForSelector:(SEL)aSelector {
+    // ❌ 不能返回 self，否则无限循环
+    if (aSelector == @selector(foo)) {
+        return self;  // Runtime 检测到后会直接走完整转发或崩溃
+    }
+    
+    // ❌ 返回的对象必须能响应这个方法
+    if (![self.delegate respondsToSelector:aSelector]) {
+        return nil;  // 不能随便返回对象
+    }
+    
+    // ✅ 正确：返回能处理的对象
+    return self.delegate;
+}
+```
+
+**为什么不能返回 self？**
+
+因为 `forwardingTargetForSelector:` 的调用时机是"在当前对象方法表找不到"之后。如果返回 self：
+
+```text
+[obj foo]
+  -> obj 的方法表找不到 foo
+  -> forwardingTargetForSelector: 返回 obj
+  -> 重新给 obj 发 foo 消息
+  -> 又找不到
+  -> 又调用 forwardingTargetForSelector:
+  -> 死循环
+```
+
+**不能修改调用：**
+
+快速转发只是"换接收者"，不能：
+- 修改参数
+- 修改 selector
+- 拿到 NSInvocation
+- 多播给多个对象
+- 记录调用日志
+- 做权限检查
+
+如果需要这些能力，必须用完整转发。
+
+**性能对比（重要）：**
+
+快速转发**不创建 NSInvocation**，这是它比完整转发快的根本原因：
+
+```text
+快速转发：重新 objc_msgSend(newTarget, selector, args...)
+完整转发：构造 NSInvocation（涉及签名查找、参数拷贝、返回值缓冲）
+```
+
+典型场景：
+- 轻量代理：把某一类消息转发给内部对象
+- 组合模式：对外统一接口，内部分发给不同子服务
+- 透明替身：对调用方隐藏真实接收者
+
+### 扩展3：完整转发的复杂性和工程风险
+
+完整转发是三阶段里最复杂、最强大、也最容易出错的。
+
+**完整流程（伪代码）：**
+
+```text
+快速转发返回 nil
+  -> 调用 -methodSignatureForSelector:
+  -> 如果返回 nil，直接 doesNotRecognizeSelector:
+  -> 如果返回签名，Runtime 用它构造 NSInvocation
+  -> 调用 -forwardInvocation:
+  -> 你可以修改 invocation、转发、多播、缓存等
+  -> 调用 [invocation invoke]
+```
+
+**为什么必须先返回方法签名？**
+
+`NSInvocation` 需要知道：
+- 返回值类型和大小（决定返回值寄存器/栈布局）
+- 参数个数和类型（决定如何从寄存器/栈读取参数）
+- 是否是结构体返回（arm64 统一了但老架构有差异）
+
+如果签名错误：
+```objc
+- (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector {
+    // ❌ 错误：返回签名和真实方法不匹配
+    return [NSMethodSignature signatureWithObjCTypes:"v@:"];  // void (id, SEL)
+}
+
+- (void)forwardInvocation:(NSInvocation *)invocation {
+    // 实际被调用方法有参数，但签名里没有
+    // Runtime 会按错误签名读取参数 → 寄存器/栈错位 → 崩溃或数据错乱
+}
+```
+
+**NSInvocation 到底保存了什么？**
+
+```objc
+NSInvocation *invocation;
+// 里面有：
+invocation.target;           // 原始接收者
+invocation.selector;         // 原始 selector
+invocation.methodSignature;  // 签名
+// 参数：getArgument:atIndex:
+// 返回值：getReturnValue:
+```
+
+关键能力：
+```objc
+- (void)forwardInvocation:(NSInvocation *)invocation {
+    // 1. 可以改 target
+    invocation.target = self.backup;
+    
+    // 2. 可以改 selector
+    invocation.selector = @selector(fallbackMethod);
+    
+    // 3. 可以改参数
+    NSString *newArg = @"modified";
+    [invocation setArgument:&newArg atIndex:2];  // index 0/1 是 self/_cmd
+    
+    // 4. 可以多播
+    for (id observer in self.observers) {
+        invocation.target = observer;
+        [invocation invoke];
+    }
+    
+    // 5. 可以读取返回值
+    [invocation invoke];
+    id returnValue;
+    [invocation getReturnValue:&returnValue];
+    NSLog(@"got return: %@", returnValue);
+}
+```
+
+**工程陷阱1：对象参数的内存管理**
+
+ARC 下，`NSInvocation` 不会自动 retain 参数对象：
+
+```objc
+- (void)forwardInvocation:(NSInvocation *)invocation {
+    // ❌ 危险：参数对象可能已经释放
+    dispatch_async(queue, ^{
+        [invocation invoke];  // 参数可能是悬空指针
+    });
+    
+    // ✅ 正确：显式 retain
+    [invocation retainArguments];
+    dispatch_async(queue, ^{
+        [invocation invoke];
+    });
+}
+```
+
+**工程陷阱2：结构体/基本类型参数**
+
+```objc
+// 设置基本类型参数
+int count = 10;
+[invocation setArgument:&count atIndex:2];  // 注意取地址
+
+// 设置结构体
+CGRect frame = CGRectMake(0, 0, 100, 100);
+[invocation setArgument:&frame atIndex:2];
+```
+
+**工程陷阱3：block 参数**
+
+Block 作为参数传递时要特别小心：
+```objc
+void (^block)(void) = ^{ NSLog(@"block"); };
+[invocation setArgument:&block atIndex:2];  // block 可能在栈上
+[invocation retainArguments];  // 这会 copy block 到堆
+```
+
+**性能代价（量化）：**
+
+在典型场景下，完整转发的成本是直接调用的 **10-50倍**：
+
+```text
+直接调用 objc_msgSend:       ~10-20 纳秒
+快速转发:                      ~100-200 纳秒（多一次查找+一次消息发送）
+完整转发:                      ~500-1000 纳秒（查签名+构造invocation+参数拷贝）
+```
+
+所以完整转发适合：
+- 低频基础设施（RPC 代理、AOP 埋点）
+- 多播代理（通知多个观察者）
+- 调用记录和重放
+- 权限拦截和审计
+
+不适合：
+- 高频业务调用
+- 性能敏感热路径
+- 简单的方法代理
+
+### 扩展4：三阶段转发的决策树
+
+面试时要能清晰说出什么场景用哪个阶段：
+
+```text
+需求：给类补一个通用方法实现
+  → 动态方法解析
+
+需求：把调用转给另一个对象，不修改参数
+  → 快速转发
+
+需求：多播、改参数、记录调用、RPC
+  → 完整转发
+
+需求：防崩溃兜底
+  → 完整转发 + 返回安全默认值
+  → 但要记录日志、聚合分析、推动修复
+```
+
+### 扩展5：防崩溃兜底的正确姿势
+
+很多 SDK 用消息转发做 `unrecognized selector` 防崩溃：
+
+```objc
+- (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector {
+    // 兜底：返回一个万能签名
+    return [NSMethodSignature signatureWithObjCTypes:"v@:@"];
+}
+
+- (void)forwardInvocation:(NSInvocation *)invocation {
+    // 记录崩溃信息
+    NSLog(@"[防崩溃] %@ 调用了不存在的方法 %@", 
+          NSStringFromClass([invocation.target class]),
+          NSStringFromSelector(invocation.selector));
+    
+    // 上报到监控系统
+    [CrashMonitor reportUnrecognizedSelector:invocation];
+    
+    // 静默返回（不做任何事）
+}
+```
+
+**工程风险：**
+
+1. **掩盖真实 bug**  
+   线上不崩了，但业务逻辑可能已经错了
+
+2. **返回值不确定**  
+   调用方期望返回对象/整数/结构体，你返回什么？
+
+3. **破坏调用方假设**  
+   调用方以为方法执行了，实际什么都没发生
+
+4. **调试困难**  
+   堆栈不再停在真实错误现场
+
+**稳定方案：**
+
+```objc
+// 1. 只对白名单类兜底
+if (![self shouldPreventCrashForClass:[invocation.target class]]) {
+    [super forwardInvocation:invocation];  // 让它正常崩
+    return;
+}
+
+// 2. debug 模式仍然 crash
+#if DEBUG
+    [super forwardInvocation:invocation];
+    return;
+#endif
+
+// 3. 记录完整上下文
+NSMutableDictionary *context = @{
+    @"class": NSStringFromClass([invocation.target class]),
+    @"selector": NSStringFromSelector(invocation.selector),
+    @"thread": [NSThread currentThread],
+    @"stackSymbols": [NSThread callStackSymbols]
+}.mutableCopy;
+
+// 4. 按签名返回安全默认值
+const char *returnType = invocation.methodSignature.methodReturnType;
+if (strcmp(returnType, "@") == 0) {
+    // 对象类型返回 nil
+    id nilValue = nil;
+    [invocation setReturnValue:&nilValue];
+} else if (strcmp(returnType, "v") == 0) {
+    // void 不用设返回值
+} else {
+    // 基本类型返回 0
+    long long zero = 0;
+    [invocation setReturnValue:&zero];
+}
+
+// 5. 聚合上报
+[Monitoring aggregateUnrecognizedSelector:context];
+```
+
+### 扩展6：respondsToSelector: 和消息转发的协调
+
+标准实现只查方法列表，不知道你后续会通过转发处理：
+
+```objc
+if ([obj respondsToSelector:@selector(foo)]) {
+    [obj foo];  // 可能返回 NO，但实际 foo 能通过转发处理
+}
+```
+
+**正确做法：同步重写**
+
+```objc
+- (BOOL)respondsToSelector:(SEL)aSelector {
+    if ([super respondsToSelector:aSelector]) {
+        return YES;
+    }
+    
+    // 检查是否能通过转发处理
+    if ([self.proxy respondsToSelector:aSelector]) {
+        return YES;
+    }
+    
+    return NO;
+}
+
+- (id)forwardingTargetForSelector:(SEL)aSelector {
+    if ([self.proxy respondsToSelector:aSelector]) {
+        return self.proxy;
+    }
+    return [super forwardingTargetForSelector:aSelector];
+}
+```
+
+否则 KVO、Cocoa 框架、第三方库可能因为 `respondsToSelector:` 返回 NO 而跳过调用。
+
+### 扩展7：实战案例 - 多播代理的标准实现
+
+```objc
+@interface MulticastDelegate : NSObject
+@property (nonatomic, strong) NSHashTable *delegates;  // weak 引用
+@end
+
+@implementation MulticastDelegate
+
+- (NSMethodSignature *)methodSignatureForSelector:(SEL)sel {
+    // 从任意一个 delegate 获取签名
+    for (id delegate in self.delegates) {
+        if ([delegate respondsToSelector:sel]) {
+            return [delegate methodSignatureForSelector:sel];
+        }
+    }
+    
+    // 兜底：避免崩溃
+    return [NSMethodSignature signatureWithObjCTypes:"v@:"];
+}
+
+- (void)forwardInvocation:(NSInvocation *)invocation {
+    SEL selector = invocation.selector;
+    
+    // 遍历所有 delegate
+    for (id delegate in self.delegates) {
+        if ([delegate respondsToSelector:selector]) {
+            // 重置 target 并调用
+            invocation.target = delegate;
+            [invocation invoke];
+        }
+    }
+}
+
+- (BOOL)respondsToSelector:(SEL)aSelector {
+    if ([super respondsToSelector:aSelector]) {
+        return YES;
+    }
+    
+    // 只要有一个 delegate 能响应就返回 YES
+    for (id delegate in self.delegates) {
+        if ([delegate respondsToSelector:aSelector]) {
+            return YES;
+        }
+    }
+    
+    return NO;
+}
+
+@end
+```
+
+**使用：**
+```objc
+MulticastDelegate *multicast = [[MulticastDelegate alloc] init];
+[multicast.delegates addObject:observerA];
+[multicast.delegates addObject:observerB];
+
+// 调用会通知所有观察者
+[(id<SomeDelegate>)multicast didSomething];
+```
+
+### 扩展8：消息转发和方法缓存的关系
+
+容易被忽略的细节：**动态解析添加的方法会进 cache，但转发不会**。
+
+```text
+动态解析成功：
+  class_addMethod 把方法加入类
+  -> 下次调用直接命中方法列表
+  -> 后续可能进 cache
+
+快速转发/完整转发：
+  -> 每次都走转发流程
+  -> 不进 cache
+  -> 性能取决于转发逻辑
+```
+
+所以高频调用不要依赖转发，要么用动态解析，要么重新设计。
+
+---
+
+## 补充总结
+
+消息转发三阶段的深度记忆点：
+
+1. **动态解析**：永久改变类的能力，适合补通用方法
+2. **快速转发**：换接收者，不创建 invocation，适合轻量代理
+3. **完整转发**：万能但贵，适合多播、RPC、调用记录
+
+面试追问时要能讲出：
+- 每个阶段的调用时机和限制
+- NSInvocation 的构造成本和内存管理
+- 防崩溃兜底的工程陷阱
+- respondsToSelector: 需要同步重写
+- 性能代价的量级差异
+
+工程上：动态解析和快速转发优先，完整转发只用在真正需要的地方。

@@ -198,6 +198,262 @@ Dart Heap 可能并不高。
 
 ## 9. 高频追问
 
+---
+
+## 🔬 深度扩展：DevTools Memory视图与图片内存计算
+
+### 扩展1：DevTools Memory视图解读
+
+**Snapshot对比流程：**
+```text
+1. Snapshot A（进入页面前）
+2. 操作页面
+3. 退出页面
+4. 手动GC（点击垃圾桶图标）
+5. Snapshot B（退出后）
+6. Diff模式查看增量
+```
+
+**关键指标：**
+- **Shallow Size**：对象自身占用
+- **Retained Size**：对象+其持有的对象总占用
+- **Retaining Path**：谁持有了这个对象
+
+**示例：**
+```text
+查找State泄漏：
+1. 搜索"MyPageState"
+2. 如果退出后仍存在，查看Retaining Path
+3. 例如：StreamSubscription → closure → MyPageState
+4. 定位到未cancel的订阅
+```
+
+### 扩展2：图片内存占用的精确计算
+
+**公式：**
+```text
+内存占用 = 宽度 × 高度 × 4 字节（RGBA）
+
+例如：1920×1080的图片
+= 1920 × 1080 × 4
+= 8,294,400 字节
+≈ 8 MB
+```
+
+**关键点：**
+- 不是文件大小（jpg压缩后可能只有几百KB）
+- 是解码后的位图大小
+- Image缓存的就是解码后的数据
+
+**优化策略：**
+```dart
+// 1. 缓存控制
+Image.network(
+  url,
+  cacheWidth: 200,  // 限制缓存宽度
+  cacheHeight: 200,
+)
+
+// 2. 占位图
+FadeInImage.memoryNetwork(
+  placeholder: kTransparentImage,  // 1x1透明图
+  image: url,
+)
+
+// 3. 清理缓存
+imageCache.clear();
+imageCache.maximumSize = 100;  // 限制缓存数量
+imageCache.maximumSizeBytes = 50 << 20;  // 限制50MB
+```
+
+### 扩展3：列表图片泄漏的排查步骤
+
+**场景复现：**
+```dart
+// 长列表快速滚动，内存持续上涨
+ListView.builder(
+  itemCount: 10000,
+  itemBuilder: (context, index) {
+    return Image.network(urls[index]);
+  },
+)
+```
+
+**排查：**
+1. DevTools查看Image对象数量
+2. 检查是否有全局缓存持有
+3. 查看imageCache.currentSize
+4. 确认dispose时是否清理
+
+**解决：**
+```dart
+// 使用CachedNetworkImage
+CachedNetworkImage(
+  imageUrl: url,
+  maxHeightDiskCache: 200,
+  maxWidthDiskCache: 200,
+  memCacheWidth: 200,
+  memCacheHeight: 200,
+)
+```
+
+### 扩展4：StreamSubscription泄漏检测
+
+**泄漏代码：**
+```dart
+class MyPage extends StatefulWidget {
+  @override
+  _MyPageState createState() => _MyPageState();
+}
+
+class _MyPageState extends State<MyPage> {
+  @override
+  void initState() {
+    super.initState();
+    // ❌ 未保存subscription，无法cancel
+    EventBus.instance.on<UserEvent>().listen((event) {
+      setState(() {
+        // 持有State
+      });
+    });
+  }
+}
+```
+
+**DevTools检测：**
+```text
+1. 进入页面 → snapshot
+2. 退出页面 → GC → snapshot
+3. 搜索"StreamSubscription"
+4. 查看Retaining Path
+5. 发现：EventBus → StreamController → Subscription → closure → State
+```
+
+**修复：**
+```dart
+StreamSubscription? _subscription;
+
+@override
+void initState() {
+  super.initState();
+  _subscription = EventBus.instance.on<UserEvent>().listen((event) {
+    setState(() {});
+  });
+}
+
+@override
+void dispose() {
+  _subscription?.cancel();
+  super.dispose();
+}
+```
+
+### 扩展5：PlatformView的Native内存
+
+**问题：**
+```dart
+// 嵌入WebView
+WebView(
+  initialUrl: 'https://...',
+)
+// Dart Heap显示正常，但iOS Memory Footprint很高
+```
+
+**原因：**
+- WebView在Native层分配内存
+- Dart Heap不包含Native内存
+- DevTools看不到真实占用
+
+**排查工具：**
+```text
+iOS：
+- Xcode Memory Graph
+- Instruments Allocations
+- VM Tracker（查看各类内存）
+
+Android：
+- Android Profiler
+- dumpsys meminfo
+```
+
+### 扩展6：Image Cache的工作机制
+
+**Flutter的图片缓存：**
+```dart
+class ImageCache {
+  final Map<Object, _PendingImage> _pendingImages = {};
+  final Map<Object, _CachedImage> _cache = {};
+  
+  int _maximumSize = 1000;  // 最多缓存1000张
+  int _maximumSizeBytes = 100 << 20;  // 最多100MB
+  
+  int get currentSize => _cache.length;
+  int get currentSizeBytes => _cache.values
+      .fold<int>(0, (int size, _CachedImage image) => size + image.sizeBytes);
+}
+```
+
+**清理策略：**
+- LRU（最近最少使用）
+- 达到maximumSize或maximumSizeBytes时清理
+
+**手动控制：**
+```dart
+// 全局清理
+PaintingBinding.instance.imageCache.clear();
+
+// 清理单张
+PaintingBinding.instance.imageCache.evict(key);
+
+// 调整限制
+PaintingBinding.instance.imageCache.maximumSizeBytes = 50 << 20;
+```
+
+### 扩展7：dispose的正确顺序
+
+**标准模板：**
+```dart
+@override
+void dispose() {
+  // 1. 先取消订阅/监听
+  _subscription?.cancel();
+  _animationController?.removeListener(_listener);
+  
+  // 2. 再dispose资源
+  _animationController?.dispose();
+  _textEditingController?.dispose();
+  _focusNode?.dispose();
+  
+  // 3. 最后调用super
+  super.dispose();
+}
+```
+
+**为什么这个顺序？**
+- 先断开引用链（取消订阅）
+- 再释放资源（dispose controller）
+- 最后通知框架（super.dispose）
+
+---
+
+## 补充总结
+
+Flutter内存排查的深度记忆点：
+
+1. **DevTools Snapshot**：对比进入前/退出后，查看Retaining Path
+2. **图片内存计算**：宽×高×4字节，不是文件大小
+3. **列表泄漏**：检查imageCache.currentSize，限制缓存
+4. **StreamSubscription**：必须保存并在dispose中cancel
+5. **PlatformView内存**：Dart Heap看不到，要用Native工具
+6. **Image Cache机制**：LRU策略，可手动控制大小
+7. **dispose顺序**：取消订阅 → dispose资源 → super.dispose
+
+面试追问时要能讲出：
+- DevTools的Snapshot对比流程（进入前/后对比，查Retaining Path）
+- 图片内存的计算方法（宽×高×4，解码后位图大小）
+- 列表泄漏的排查步骤（查currentSize、检查全局缓存）
+- PlatformView为什么DevTools看不到（Native层内存）
+
 ### Q1：Flutter 页面 Dart Heap 不高但 OOM，可能是什么原因？
 
 图片解码后的 Native 内存、GPU 纹理、PlatformView、WebView、Engine 常驻资源或 Native 插件占用。

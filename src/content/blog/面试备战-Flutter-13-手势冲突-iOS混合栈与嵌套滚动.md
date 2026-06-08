@@ -168,6 +168,125 @@ Flutter 内部用 `NestedScrollView` + `SliverOverlapAbsorber`/`SliverOverlapInj
 
 PlatformView 是原生视图嵌入 Flutter。
 
+---
+
+## 🔬 深度扩展：Gesture Arena竞技场机制
+
+### 扩展1：Gesture Arena的完整流程
+
+**竞技场规则：**
+```text
+1. PointerDown → 所有手势识别器进入Arena
+2. 收集手势序列（move/up）
+3. 识别器判断是否匹配
+4. 第一个识别成功的获胜
+5. 其他识别器失败
+```
+
+**示例：**
+```dart
+GestureDetector(
+  onTap: () => print('Tap'),
+  onLongPress: () => print('LongPress'),
+  child: Container(width: 100, height: 100),
+);
+
+// PointerDown → Tap和LongPress进入Arena
+// 如果长按超过500ms → LongPress获胜
+// 如果快速抬起 → Tap获胜
+```
+
+### 扩展2：嵌套滚动的NestedScrollView
+
+**问题：AppBar折叠+TabBar+ListView**
+```dart
+NestedScrollView(
+  headerSliverBuilder: (context, innerBoxIsScrolled) {
+    return [
+      SliverAppBar(expandedHeight: 200),
+      SliverPersistentHeader(delegate: TabBarDelegate()),
+    ];
+  },
+  body: TabBarView(
+    children: [
+      ListView.builder(...),
+      ListView.builder(...),
+    ],
+  ),
+);
+```
+
+**滚动协调：**
+- 先滚AppBar（外层）
+- AppBar折叠完 → 滚ListView（内层）
+- ListView到顶 → 滚AppBar展开
+
+### 扩展3：iOS边缘滑动与Flutter手势
+
+**冲突场景：**
+```text
+iOS边缘滑动返回手势
+  vs
+Flutter ListView水平滑动
+```
+
+**解决：**
+```dart
+// Flutter侧禁用水平滑动
+ListView(
+  physics: NeverScrollableScrollPhysics(),
+);
+
+// 或使用GestureDetector控制
+GestureDetector(
+  onHorizontalDragStart: (details) {
+    if (details.globalPosition.dx < 20) {
+      // 边缘区域，不拦截
+      return;
+    }
+    // 处理Flutter滑动
+  },
+);
+```
+
+### 扩展4：PlatformView手势穿透
+
+**问题：**
+```text
+Flutter Widget（可点击）
+  覆盖在
+PlatformView（WebView）上
+
+点击时优先给谁？
+```
+
+**HybridComposition（iOS）：**
+- Native视图真实嵌入
+- 手势优先Native
+- Flutter需要手动处理
+
+**VirtualDisplay（Android）：**
+- Native视图渲染成纹理
+- 手势优先Flutter
+- 性能更好
+
+---
+
+## 补充总结
+
+手势冲突的深度记忆点：
+
+1. **Gesture Arena**：竞技场机制、第一个识别成功的获胜
+2. **嵌套滚动**：NestedScrollView协调外层和内层
+3. **iOS边缘滑动**：Flutter侧禁用或判断边缘区域
+4. **PlatformView**：HybridComposition手势优先Native
+
+面试追问时要能讲出：
+- Gesture Arena的竞技场规则
+- NestedScrollView的滚动协调
+- iOS边缘滑动的解决方案
+- PlatformView的手势优先级
+
 例如：
 
 - iOS 地图。

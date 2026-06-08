@@ -227,6 +227,296 @@ Isolate 深挖：
 
 取消问题：
 
+---
+
+## 🔬 深度扩展：Isolate的SendPort与ReceivePort机制
+
+### 扩展1：Isolate通信的完整流程
+
+**创建Isolate：**
+```dart
+void heavyTask(SendPort sendPort) {
+  // 执行耗时计算
+  int result = compute(data);
+  
+  // 发送结果回主Isolate
+  sendPort.send(result);
+}
+
+void main() async {
+  // 创建ReceivePort
+  ReceivePort receivePort = ReceivePort();
+  
+  // 启动Isolate，传入SendPort
+  await Isolate.spawn(heavyTask, receivePort.sendPort);
+  
+  // 监听结果
+  receivePort.listen((message) {
+    print('Result: $message');
+    receivePort.close();
+  });
+}
+```
+
+**双向通信：**
+```dart
+void isolateTask(SendPort mainSendPort) {
+  // 创建自己的ReceivePort
+  ReceivePort receivePort = ReceivePort();
+  
+  // 发送自己的SendPort给主Isolate
+  mainSendPort.send(receivePort.sendPort);
+  
+  // 监听主Isolate的消息
+  receivePort.listen((message) {
+    print('Received: $message');
+    mainSendPort.send('Response: $message');
+  });
+}
+```
+
+### 扩展2：Isolate的消息拷贝机制
+
+**普通消息（深拷贝）：**
+```dart
+List<int> data = List.generate(1000000, (i) => i);
+
+// 发送时完整拷贝
+sendPort.send(data);  // 拷贝100万个int
+```
+
+**TransferableTypedData（零拷贝）：**
+```dart
+import 'dart:typed_data';
+
+Uint8List data = Uint8List(1000000);
+
+// 转为TransferableTypedData
+TransferableTypedData transferable = TransferableTypedData.fromList([data]);
+
+// 发送（转移所有权，不拷贝）
+sendPort.send(transferable);
+
+// 发送后data不可用
+```
+
+### 扩展3：async/await的状态机转换
+
+**源码：**
+```dart
+Future<String> fetchData() async {
+  print('1');
+  String result = await httpGet();
+  print('2');
+  return result;
+}
+```
+
+**编译器转换（简化）：**
+```dart
+Future<String> fetchData() {
+  return _fetchData$async();
+}
+
+Future<String> _fetchData$async() {
+  final completer = Completer<String>();
+  
+  void _continuation(dynamic value) {
+    // await之后的代码
+    print('2');
+    completer.complete(value as String);
+  }
+  
+  print('1');
+  httpGet().then(_continuation, onError: completer.completeError);
+  
+  return completer.future;
+}
+```
+
+### 扩展4：Stream的背压处理
+
+**问题：生产快于消费**
+```dart
+StreamController<int> controller = StreamController();
+
+// 快速生产
+for (int i = 0; i < 10000; i++) {
+  controller.add(i);
+}
+
+// 慢速消费
+controller.stream.listen((data) async {
+  await Future.delayed(Duration(milliseconds: 100));
+  print(data);
+});
+```
+
+**解决：暂停/恢复**
+```dart
+StreamSubscription subscription = controller.stream.listen((data) async {
+  subscription.pause();  // 暂停接收
+  
+  await processData(data);
+  
+  subscription.resume();  // 恢复接收
+});
+```
+
+### 扩展5：Compute函数的实现
+
+**compute封装：**
+```dart
+Future<R> compute<Q, R>(ComputeCallback<Q, R> callback, Q message) async {
+  ReceivePort receivePort = ReceivePort();
+  
+  await Isolate.spawn(
+    _isolateEntryPoint,
+    _IsolateConfiguration(callback, message, receivePort.sendPort),
+  );
+  
+  return await receivePort.first as R;
+}
+
+void _isolateEntryPoint(_IsolateConfiguration config) {
+  final result = config.callback(config.message);
+  config.sendPort.send(result);
+}
+```
+
+**使用场景：**
+```dart
+// 图片解码
+Uint8List bytes = await compute(decodeImage, imageData);
+
+// JSON解析
+Map<String, dynamic> json = await compute(jsonDecode, largeJsonString);
+```
+
+### 扩展6：StreamController的sync参数
+
+**async（默认）：**
+```dart
+StreamController<int> controller = StreamController();
+
+controller.stream.listen((data) {
+  print('Listener: $data');
+});
+
+controller.add(1);
+print('After add');
+
+// 输出：
+// After add
+// Listener: 1（延迟到下一个microtask）
+```
+
+**sync：**
+```dart
+StreamController<int> controller = StreamController(sync: true);
+
+controller.stream.listen((data) {
+  print('Listener: $data');
+});
+
+controller.add(1);
+print('After add');
+
+// 输出：
+// Listener: 1（立即执行）
+// After add
+```
+
+**风险：**
+```dart
+controller.stream.listen((data) {
+  controller.add(data + 1);  // 递归add
+});
+
+controller.add(1);  // StackOverflow
+```
+
+### 扩展7：Future的错误处理
+
+**try-catch：**
+```dart
+try {
+  String result = await fetchData();
+} catch (e) {
+  print('Error: $e');
+}
+```
+
+**catchError：**
+```dart
+fetchData()
+  .then((result) => print(result))
+  .catchError((e) => print('Error: $e'));
+```
+
+**whenComplete：**
+```dart
+fetchData()
+  .then((result) => print(result))
+  .catchError((e) => print('Error: $e'))
+  .whenComplete(() => print('Done'));  // 类似finally
+```
+
+### 扩展8：EventLoop的任务队列
+
+**两个队列：**
+```text
+Event Queue（事件队列）：
+- Timer
+- IO
+- User Input
+
+Microtask Queue（微任务队列）：
+- Future.then
+- scheduleMicrotask
+```
+
+**执行顺序：**
+```text
+1. 执行当前任务
+2. 清空Microtask Queue
+3. 从Event Queue取下一个任务
+4. 重复
+```
+
+**示例：**
+```dart
+Future.delayed(Duration.zero, () => print('1'));
+scheduleMicrotask(() => print('2'));
+print('3');
+
+// 输出：3, 2, 1
+// 3: 同步代码
+// 2: Microtask优先
+// 1: Event Queue
+```
+
+---
+
+## 补充总结
+
+Dart异步的深度记忆点：
+
+1. **Isolate通信**：SendPort/ReceivePort消息传递
+2. **消息拷贝**：普通消息深拷贝、TransferableTypedData零拷贝
+3. **async/await**：编译器转状态机、continuation
+4. **Stream背压**：pause/resume控制消费速度
+5. **compute**：封装Isolate.spawn的便捷函数
+6. **StreamController.sync**：同步派发有递归风险
+7. **错误处理**：try-catch、catchError、whenComplete
+8. **EventLoop**：Microtask优先于Event
+
+面试追问时要能讲出：
+- Isolate的通信机制（SendPort/ReceivePort）
+- TransferableTypedData的优势（零拷贝）
+- async/await的编译器转换（状态机）
+- Stream背压的处理（pause/resume）
+
 > Future 本身没有通用取消语义。工程上要用 token、CancelableOperation、状态机或丢弃过期结果。否则搜索、分页、页面退出后回调都可能出现旧结果覆盖新状态。
 
 ## 一句话总结

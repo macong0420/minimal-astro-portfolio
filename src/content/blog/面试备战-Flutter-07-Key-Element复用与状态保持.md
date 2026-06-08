@@ -166,7 +166,80 @@ formKey.currentState?.validate();
 
 Key 应该解决身份问题，不应该替代状态管理。
 
+---
 
+## 🔬 深度扩展：Key的canUpdate匹配规则
+
+### 扩展1：Widget.canUpdate的精确规则
+
+**源码：**
+```dart
+static bool canUpdate(Widget oldWidget, Widget newWidget) {
+  return oldWidget.runtimeType == newWidget.runtimeType
+      && oldWidget.key == newWidget.key;
+}
+```
+
+**匹配规则：**
+- runtimeType相同 + key相同 → 复用Element
+- 否则 → 创建新Element
+
+### 扩展2：列表交换的Key必要性
+
+**无Key（错误）：**
+```dart
+List<Widget> items = [
+  StatefulItem(data: 'A'),
+  StatefulItem(data: 'B'),
+];
+
+// 交换后
+items = [items[1], items[0]];
+
+// Element复用导致状态错乱
+```
+
+**有Key（正确）：**
+```dart
+List<Widget> items = [
+  StatefulItem(key: ValueKey('A'), data: 'A'),
+  StatefulItem(key: ValueKey('B'), data: 'B'),
+];
+
+// 交换后Key不匹配，Element正确移动
+```
+
+### 扩展3：GlobalKey的查找开销
+
+**查找机制：**
+```dart
+// GlobalKey维护全局Map
+static final Map<GlobalKey, Element> _registry = {};
+
+// 查找Element
+Element? element = _registry[globalKey];
+```
+
+**性能影响：**
+- 全局查找有开销
+- 不适合大量使用
+- 推荐：局部状态用StatefulWidget、全局状态用Provider
+
+---
+
+## 补充总结
+
+Key的深度记忆点：
+
+1. **canUpdate规则**：runtimeType + key都匹配才复用
+2. **列表场景**：交换/删除/插入需要Key
+3. **Key类型**：ValueKey（值）、ObjectKey（引用）、UniqueKey（唯一）
+4. **GlobalKey**：跨树访问State，有性能开销
+
+面试追问时要能讲出：
+- canUpdate的匹配规则（类型+key）
+- 为什么列表交换需要Key（Element复用导致状态错乱）
+- GlobalKey的性能问题（全局Map查找）
 ## 深挖追问：Key 参与的是兄弟节点匹配
 
 Key 的作用范围要说准：

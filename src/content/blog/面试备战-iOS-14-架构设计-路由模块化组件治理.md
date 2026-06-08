@@ -237,3 +237,335 @@ App Shell
 ## 一句话总结
 
 架构设计的核心不是模式名，而是让业务长期演进时边界清晰、依赖可控、问题可定位、治理可持续。
+
+---
+
+## 🔬 深度扩展：路由注册时机与参数传递方案
+
+### 扩展1：URL路由的完整实现
+
+**路由注册：**
+```objc
+// 在启动时注册
+[Router registerURL:@"app://product/detail" 
+            handler:^(NSDictionary *params) {
+    NSString *productId = params[@"id"];
+    ProductDetailVC *vc = [[ProductDetailVC alloc] initWithProductId:productId];
+    return vc;
+}];
+```
+
+**路由调用：**
+```objc
+// 跳转
+[Router openURL:@"app://product/detail?id=123" 
+       animated:YES
+     completion:nil];
+
+// 获取ViewController
+UIViewController *vc = [Router viewControllerForURL:@"app://product/detail?id=123"];
+[self.navigationController pushViewController:vc animated:YES];
+```
+
+**参数传递：**
+```objc
+// 方案1：URL参数（简单类型）
+@"app://product/detail?id=123&from=home"
+
+// 方案2：UserInfo传递复杂对象
+NSDictionary *userInfo = @{@"product": productModel};
+[Router openURL:@"app://product/detail" 
+       userInfo:userInfo 
+       animated:YES];
+```
+
+### 扩展2：Protocol路由的类型安全
+
+**定义协议：**
+```objc
+@protocol ProductRouterProtocol <NSObject>
+- (UIViewController *)productDetailWithId:(NSString *)productId;
+- (UIViewController *)productListWithCategory:(NSString *)category;
+@end
+```
+
+**注册实现：**
+```objc
+@interface ProductRouter : NSObject <ProductRouterProtocol>
+@end
+
+@implementation ProductRouter
+- (UIViewController *)productDetailWithId:(NSString *)productId {
+    return [[ProductDetailVC alloc] initWithProductId:productId];
+}
+@end
+
+// 注册
+[ServiceLocator registerService:@protocol(ProductRouterProtocol) 
+                    implementation:[ProductRouter new]];
+```
+
+**调用：**
+```objc
+id<ProductRouterProtocol> router = [ServiceLocator serviceForProtocol:@protocol(ProductRouterProtocol)];
+UIViewController *vc = [router productDetailWithId:@"123"];
+[self.navigationController pushViewController:vc animated:YES];
+```
+
+### 扩展3：路由拦截器链
+
+**拦截器协议：**
+```objc
+@protocol RouterInterceptor <NSObject>
+- (BOOL)shouldIntercept:(RouterRequest *)request;
+- (void)intercept:(RouterRequest *)request completion:(void(^)(BOOL shouldContinue))completion;
+@end
+```
+
+**登录拦截器：**
+```objc
+@implementation LoginInterceptor
+- (BOOL)shouldIntercept:(RouterRequest *)request {
+    return request.requiresLogin && ![UserManager isLoggedIn];
+}
+
+- (void)intercept:(RouterRequest *)request completion:(void(^)(BOOL))completion {
+    [LoginVC showWithCompletion:^(BOOL success) {
+        completion(success);
+    }];
+}
+@end
+```
+
+**拦截器链执行：**
+```objc
+- (void)openURL:(NSString *)url {
+    RouterRequest *request = [RouterRequest requestWithURL:url];
+    
+    [self executeInterceptors:self.interceptors 
+                      request:request 
+                        index:0 
+                   completion:^(BOOL shouldContinue) {
+        if (shouldContinue) {
+            [self realOpenURL:url];
+        }
+    }];
+}
+
+- (void)executeInterceptors:(NSArray<id<RouterInterceptor>> *)interceptors
+                    request:(RouterRequest *)request
+                      index:(NSInteger)index
+                 completion:(void(^)(BOOL))completion {
+    if (index >= interceptors.count) {
+        completion(YES);
+        return;
+    }
+    
+    id<RouterInterceptor> interceptor = interceptors[index];
+    if ([interceptor shouldIntercept:request]) {
+        [interceptor intercept:request completion:^(BOOL shouldContinue) {
+            if (shouldContinue) {
+                [self executeInterceptors:interceptors request:request index:index+1 completion:completion];
+            } else {
+                completion(NO);
+            }
+        }];
+    } else {
+        [self executeInterceptors:interceptors request:request index:index+1 completion:completion];
+    }
+}
+```
+
+### 扩展4：组件依赖的循环检测
+
+**依赖声明：**
+```ruby
+# Podfile
+target 'ModuleA' do
+  pod 'ModuleB'
+  pod 'Foundation'
+end
+
+target 'ModuleB' do
+  pod 'ModuleC'
+  pod 'Foundation'
+end
+```
+
+**循环依赖检测脚本：**
+```python
+def detect_cycle(graph, start, visited, path):
+    visited.add(start)
+    path.append(start)
+    
+    for neighbor in graph.get(start, []):
+        if neighbor in path:
+            cycle = path[path.index(neighbor):] + [neighbor]
+            return cycle
+        if neighbor not in visited:
+            result = detect_cycle(graph, neighbor, visited, path)
+            if result:
+                return result
+    
+    path.pop()
+    return None
+
+# 构建依赖图
+graph = parse_podfile()
+for module in graph:
+    cycle = detect_cycle(graph, module, set(), [])
+    if cycle:
+        print(f"循环依赖: {' -> '.join(cycle)}")
+```
+
+### 扩展5：组件降级策略
+
+**降级配置：**
+```json
+{
+  "routes": {
+    "app://product/detail": {
+      "fallback": "app://webview",
+      "fallbackParams": {
+        "url": "https://m.example.com/product"
+      }
+    }
+  }
+}
+```
+
+**降级实现：**
+```objc
+- (UIViewController *)viewControllerForURL:(NSString *)url {
+    @try {
+        UIViewController *vc = [self createViewControllerForURL:url];
+        if (vc) return vc;
+    } @catch (NSException *exception) {
+        [ErrorTracker logException:exception];
+    }
+    
+    // 降级
+    NSDictionary *fallback = [self fallbackForURL:url];
+    if (fallback) {
+        return [self viewControllerForURL:fallback[@"url"]];
+    }
+    
+    // 默认降级到webview
+    return [[WebViewController alloc] initWithURL:[self webURLForRoute:url]];
+}
+```
+
+### 扩展6：跨端路由统一
+
+**路由映射表：**
+```json
+{
+  "product_detail": {
+    "ios": "app://product/detail",
+    "android": "app://product/detail",
+    "flutter": "/product/detail",
+    "h5": "https://m.example.com/product"
+  }
+}
+```
+
+**统一跳转接口：**
+```dart
+// Flutter
+class UnifiedRouter {
+  static Future<void> push(String routeName, Map<String, dynamic> params) async {
+    if (Platform.isIOS || Platform.isAndroid) {
+      // 调用Native路由
+      await MethodChannel('router').invokeMethod('push', {
+        'route': routeName,
+        'params': params,
+      });
+    } else {
+      // Flutter内部路由
+      Navigator.pushNamed(context, routeName, arguments: params);
+    }
+  }
+}
+```
+
+### 扩展7：组件接口版本管理
+
+**接口定义：**
+```objc
+@protocol PaymentServiceProtocol <NSObject>
+@required
+// v1.0
+- (void)payWithAmount:(NSDecimalNumber *)amount completion:(void(^)(BOOL success))completion;
+
+@optional
+// v2.0 新增
+- (void)payWithOrder:(PayOrder *)order completion:(void(^)(PayResult *result))completion;
+@end
+```
+
+**版本兼容：**
+```objc
+id<PaymentServiceProtocol> service = [ServiceLocator serviceForProtocol:@protocol(PaymentServiceProtocol)];
+
+if ([service respondsToSelector:@selector(payWithOrder:completion:)]) {
+    // 使用v2.0接口
+    [service payWithOrder:order completion:completion];
+} else {
+    // 降级到v1.0接口
+    [service payWithAmount:order.amount completion:^(BOOL success) {
+        completion(success ? [PayResult successResult] : [PayResult failResult]);
+    }];
+}
+```
+
+### 扩展8：组件Owner与治理
+
+**组件元信息：**
+```yaml
+# ComponentInfo.yaml
+name: PaymentModule
+owner: payment-team
+version: 2.1.0
+dependencies:
+  - Foundation: ">= 1.0"
+  - Network: "~> 2.0"
+apis:
+  - PaymentServiceProtocol
+  - PaymentUIProtocol
+deprecated_apis:
+  - OldPaymentProtocol: "使用PaymentServiceProtocol替代"
+```
+
+**CI检查：**
+```bash
+# 检查是否使用了废弃API
+grep -r "OldPaymentProtocol" . --include="*.m" --include="*.swift"
+if [ $? -eq 0 ]; then
+  echo "错误：使用了废弃API OldPaymentProtocol"
+  exit 1
+fi
+
+# 检查循环依赖
+python check_dependencies.py
+```
+
+---
+
+## 补充总结
+
+组件化的深度记忆点：
+
+1. **URL路由**：注册handler、参数传递、类型安全
+2. **Protocol路由**：编译期检查、IDE友好
+3. **拦截器链**：登录、权限、埋点统一处理
+4. **循环依赖**：依赖图检测、编译期拦截
+5. **降级策略**：异常兜底、webview降级
+6. **跨端统一**：路由映射表、统一跳转接口
+7. **版本管理**：接口兼容、respondsToSelector检查
+8. **治理机制**：Owner、废弃API检测、CI检查
+
+面试追问时要能讲出：
+- URL路由和Protocol路由的优劣（灵活vs类型安全）
+- 拦截器链的实现（递归执行、completion回调）
+- 循环依赖的检测方法（DFS遍历依赖图）
+- 组件降级的策略（异常捕获、fallback配置）

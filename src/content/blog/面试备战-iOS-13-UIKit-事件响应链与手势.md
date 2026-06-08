@@ -198,6 +198,246 @@ hit-test 继续追问：
 - 子 view 超出父 view bounds 后点不到，通常是父 view 的 `pointInside` 先返回 NO。
 - 扩大点击区域常重写 `pointInside`，而不是只改 frame。
 
+---
+
+## 🔬 深度扩展：hitTest递归与手势识别器状态机
+
+### 扩展1：hitTest的完整递归流程
+
+**源码级实现：**
+```objc
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
+    // 1. 基本条件检查
+    if (self.hidden || !self.userInteractionEnabled || self.alpha < 0.01) {
+        return nil;
+    }
+    
+    // 2. pointInside 检查
+    if (![self pointInside:point withEvent:event]) {
+        return nil;
+    }
+    
+    // 3. 逆序遍历子视图（后添加的在上层）
+    for (UIView *subview in [self.subviews reverseObjectEnumerator]) {
+        // 坐标转换到子视图
+        CGPoint convertedPoint = [self convertPoint:point toView:subview];
+        
+        // 递归调用
+        UIView *hitView = [subview hitTest:convertedPoint withEvent:event];
+        
+        if (hitView) {
+            return hitView;  // 找到最上层的
+        }
+    }
+    
+    // 4. 子视图都没命中，返回自己
+    return self;
+}
+```
+
+**关键点：**
+- 逆序遍历（后加的先判断）
+- 递归到叶子节点
+- 坐标系转换
+
+### 扩展2：扩大点击区域的实现
+
+**重写 pointInside：**
+```objc
+@implementation UIButton (HitTest)
+
+- (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)event {
+    // 扩大 20pt
+    CGRect expandedBounds = CGRectInset(self.bounds, -20, -20);
+    return CGRectContainsPoint(expandedBounds, point);
+}
+
+@end
+```
+
+**为什么不改frame？**
+- 改 frame 影响布局
+- 可能和兄弟视图重叠
+- pointInside 只影响响应区域
+
+### 扩展3：手势识别器的状态机
+
+**UIGestureRecognizerState：**
+```objc
+typedef NS_ENUM(NSInteger, UIGestureRecognizerState) {
+    UIGestureRecognizerStatePossible,      // 初始状态
+    UIGestureRecognizerStateBegan,         // 识别开始（连续手势）
+    UIGestureRecognizerStateChanged,       // 识别变化中
+    UIGestureRecognizerStateEnded,         // 识别结束
+    UIGestureRecognizerStateCancelled,     // 被取消
+    UIGestureRecognizerStateFailed,        // 识别失败
+    UIGestureRecognizerStateRecognized = UIGestureRecognizerStateEnded  // 识别成功（离散手势）
+};
+```
+
+**状态转换：**
+```text
+Possible（初始）
+  ↓
+  触摸开始
+  ↓
+判断是否满足条件
+  ├→ 满足（连续手势）→ Began → Changed → Ended/Cancelled
+  ├→ 满足（离散手势）→ Recognized
+  └→ 不满足 → Failed
+```
+
+### 扩展4：手势冲突的解决策略
+
+**1. delegate方法控制：**
+```objc
+// 是否允许同时识别
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer
+shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+    return YES;  // 允许同时识别
+}
+
+// 是否应该接收touch
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer
+       shouldReceiveTouch:(UITouch *)touch {
+    // 点击在某个子视图上就不响应
+    if ([touch.view isKindOfClass:[UIButton class]]) {
+        return NO;
+    }
+    return YES;
+}
+```
+
+**2. require依赖：**
+```objc
+// doubleTap 失败后才识别 singleTap
+[singleTap requireGestureRecognizerToFail:doubleTap];
+```
+
+**3. cancelsTouchesInView：**
+```objc
+gesture.cancelsTouchesInView = NO;  // 识别成功不取消view的touch
+```
+
+### 扩展5：响应链的action传递
+
+**target-action机制：**
+```objc
+[button addTarget:nil action:@selector(buttonTapped:) forControlEvents:UIControlEventTouchUpInside];
+```
+
+**target为nil时的查找顺序：**
+```text
+button
+  → button.nextResponder（可能是superview）
+  → ... 沿响应链向上
+  → viewController
+  → viewController.nextResponder（可能是navigationController）
+  → window
+  → UIApplication
+  → appDelegate
+```
+
+**第一个实现该方法的响应者处理**
+
+### 扩展6：子视图超出父视图bounds的处理
+
+**问题场景：**
+```objc
+UIView *parent = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 100, 100)];
+parent.clipsToBounds = NO;  // 不裁剪
+
+UIButton *button = [[UIButton alloc] initWithFrame:CGRectMake(80, 80, 50, 50)];
+[parent addSubview:button];
+// button 右下角超出了 parent
+```
+
+**为什么点不到超出部分？**
+```text
+hitTest 流程：
+1. parent.pointInside(点击位置) → 超出部分返回 NO
+2. 直接返回 nil，不会递归到 button
+```
+
+**解决方案：**
+```objc
+@implementation UIView (HitTest)
+
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
+    if (self.hidden || !self.userInteractionEnabled || self.alpha < 0.01) {
+        return nil;
+    }
+    
+    // 遍历子视图，不检查 pointInside
+    for (UIView *subview in [self.subviews reverseObjectEnumerator]) {
+        CGPoint convertedPoint = [self convertPoint:point toView:subview];
+        UIView *hitView = [subview hitTest:convertedPoint withEvent:event];
+        if (hitView) {
+            return hitView;
+        }
+    }
+    
+    // 自己的 pointInside 检查
+    if ([self pointInside:point withEvent:event]) {
+        return self;
+    }
+    
+    return nil;
+}
+
+@end
+```
+
+### 扩展7：ScrollView的delaysContentTouches
+
+**问题：**
+```objc
+UIButton *button = ...;
+[scrollView addSubview:button];
+// 点击button有延迟
+```
+
+**原因：**
+```text
+ScrollView 需要判断是点击还是滚动
+delaysContentTouches = YES（默认）
+→ 延迟 150ms 把 touch 传给子视图
+→ 如果手指移动，判定为滚动，取消子视图的 touch
+```
+
+**解决：**
+```objc
+scrollView.delaysContentTouches = NO;  // 立即传递
+
+// 或者重写
+- (BOOL)touchesShouldCancelInContentView:(UIView *)view {
+    if ([view isKindOfClass:[UIButton class]]) {
+        return YES;  // button 可以被滚动打断
+    }
+    return [super touchesShouldCancelInContentView:view];
+}
+```
+
+---
+
+## 补充总结
+
+响应链与手势的深度记忆点：
+
+1. **hitTest递归**：逆序遍历子视图，坐标转换，返回最上层命中view
+2. **pointInside**：扩大点击区域重写这个方法，不改frame
+3. **手势状态机**：Possible → Began/Recognized/Failed
+4. **手势冲突**：delegate控制、require依赖、cancelsTouchesInView
+5. **响应链传递**：target为nil时沿nextResponder查找
+6. **超出bounds**：父视图pointInside返回NO会阻止递归
+7. **ScrollView延迟**：delaysContentTouches控制touch传递时机
+
+面试追问时要能讲出：
+- hitTest的完整递归流程（逆序、转换、递归）
+- 手势识别器的状态转换（Possible → Began/Recognized/Failed）
+- 为什么子视图超出bounds点不到（父视图pointInside先检查）
+- ScrollView点击延迟的原因（delaysContentTouches判断滚动）
+
 手势识别继续追问：
 
 - Gesture Recognizer 不是 UIResponder。
