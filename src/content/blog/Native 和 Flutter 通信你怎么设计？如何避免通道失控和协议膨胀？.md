@@ -8,6 +8,9 @@ tags:
   - "flutter"
 ---
 
+![](https://raw.githubusercontent.com/macong0420/Image/main/20260509125617842.png)
+
+
 很多团队在 Flutter 混合开发初期都很顺：`MethodChannel` 一接就通，需求推进很快。  
 但一到中后期，问题会集中爆发：
 

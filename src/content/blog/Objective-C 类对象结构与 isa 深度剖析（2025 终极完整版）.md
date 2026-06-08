@@ -59,6 +59,7 @@ tags:
 * **根元类的特殊闭环**：
     * **现象**：根元类的 `superclass` 指向根类（NSObject）。
     * **意义**：这是一个兜底机制。当调用一个不存在的类方法时，查找链会回退到 NSObject 的实例方法中。这解释了为什么类对象可以响应 `respondsToSelector:` 或 `retain` 等实例方法。
+![PixPin_2026-06-07_14-29-19.png](https://img.yc0501.online/i/{year}/{month}/{md5}.{extName}/20260607142950569.png)
 
 ---
 
@@ -109,6 +110,9 @@ struct objc_class : objc_object {
 
    - 利用指针对齐的低位存标志位，高位存 `class_rw_t*` 真实地址（通过 `FAST_DATA_MASK` 提取）。
 
+![PixPin_2026-06-07_14-53-51.png](https://img.yc0501.online/i/{year}/{month}/{md5}.{extName}/20260607145438891.png)
+
+
 ## 2.2 class\_data\_bits\_t：Clean vs Dirty Memory
 
 为了极致的内存优化，Apple 将类数据拆分为两部分：
@@ -127,6 +131,10 @@ struct objc_class : objc_object {
 > 【Why】架构思考：为什么拆分 ro 和 rw？
 >
 > 内存优化：绝大多数类在运行时不会动态修改。Apple 推迟 rw 的创建，或仅在需要时（如动态添加方法、Category 合并）才创建，极大降低了系统整体的内存足迹（Memory Footprint）。
+
+
+![PixPin_2026-06-07_19-16-48.png](https://raw.githubusercontent.com/macong0420/Image/main/20260607191655782.png)
+
 
 ***
 
@@ -175,6 +183,8 @@ Apple 从 64 位时代引入 Non-pointer isa，不再是纯指针，而是位域
   - **60-62位**：Tag Index (类标识，如 3 表示 NSNumber)。
 
   - **0-55位**：Payload (真实数值，直接存 10)。
+![PixPin_2026-06-07_19-22-25.png](https://raw.githubusercontent.com/macong0420/Image/main/20260607192241905.png)
+
 
 ### C. 灵魂拷问：如果它没有 isa，怎么调用方法？
 
@@ -197,6 +207,7 @@ Runtime 在 `objc_msgSend` 时会进行特殊判断：
 - 存 `int`：Payload 存 int。
 
 - **自动降级**：当数值太大，56 bits 存不下时，会自动降级为普通堆对象。
+![PixPin_2026-06-07_19-27-19.png](https://raw.githubusercontent.com/macong0420/Image/main/20260607192730639.png)
 
 ***
 
@@ -216,6 +227,10 @@ Runtime 在 `objc_msgSend` 时会进行特殊判断：
 2. **第二层：SideTable (溢出处理)**
 
    - 当 `extra_rc` 满位（19位，约52万）时，一半的值会搬运到全局 `SideTable` 中的 `RefcountMap`，并将 `has_sidetable_rc` 置为 1。
+
+![PixPin_2026-06-07_19-31-48.png](https://raw.githubusercontent.com/macong0420/Image/main/20260607193223413.png)
+
+
 
 ## 4.2 SideTable 深度详解——Runtime 的"外部仓库"
 
@@ -292,6 +307,10 @@ if (isa.nonpointer &&
 
 4. 处理引用计数溢出。
 
+![PixPin_2026-06-07_19-45-43.png](https://img.yc0501.online/i/{year}/{month}/{md5}.{extName}/20260607194659395.png)
+
+
+
 ***
 
 # 第五部分：Runtime 运行机制与高级特性
@@ -317,6 +336,7 @@ if (isa.nonpointer &&
 - **存储**：不在对象内存里，而是在全局 `AssociationsManager` 的 HashMap 中。
 
 - **标识**：`isa.has_assoc=1` 用于快速判断对象释放时是否需要清理关联对象。
+![PixPin_2026-06-07_19-49-52.png](https://img.yc0501.online/i/{year}/{month}/{md5}.{extName}/20260607195003135.png)
 
 ***
 
@@ -325,6 +345,8 @@ if (isa.nonpointer &&
 最后，我们将所有知识点浓缩，助你面试通关。
 
 ## 6.1 核心记忆法：Isa 就是一个"智能背包"
+![PixPin_2026-06-07_20-15-22.png](https://img.yc0501.online/i/{year}/{month}/{md5}.{extName}/20260607201535869.png)
+
 
 面试时脑海中要有这个比喻：
 
@@ -363,6 +385,5 @@ if (isa.nonpointer &&
 5. **讲特例**：Tagged Pointer 如何利用高位标记和 Payload 存值，不走 isa 逻辑。
 
 6. **升华**：**"这就是 Apple 空间换时间 + 分层处理（Fast Path / Slow Path）的极致哲学。"**
-
 
 
